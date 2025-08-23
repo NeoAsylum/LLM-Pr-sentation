@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tokenization Animation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Verhindert Scrollen während der Animation */
+        }
+        .token-card {
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform: scale(0.8);
+            opacity: 0;
+        }
+        .token-card.visible {
+            transform: scale(1);
+            opacity: 1;
+        }
+        .highlight {
+            background-color: #facc15; /* yellow-400 */
+            color: #1f2937; /* gray-800 */
+            border-radius: 4px;
+            padding: 0 2px;
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-4xl mx-auto p-4 md:p-8">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400">Tokenization Visualisiert</h1>
+            <p class="text-gray-400 mt-2 text-lg">Wie Sprachmodelle Text verstehen</p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 shadow-2xl">
+            <label for="text-input" class="block text-sm font-medium text-gray-300 mb-2">Geben Sie einen Satz ein:</label>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <input type="text" id="text-input" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" placeholder="Der schnelle Fuchs springt..." value="Ich würde gerne Geld abheben. Ich ">
+                <button id="tokenize-btn" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-lg transition-transform duration-200 ease-in-out transform hover:scale-105 shadow-lg">
+                    Tokenisieren
+                </button>
+            </div>
+        </div>
+
+        <!-- Animation Display -->
+        <div class="mt-8 relative">
+            <!-- Original Text Display -->
+            <div class="mb-6">
+                 <h2 class="text-xl font-semibold text-gray-300 mb-3">1. Originaltext</h2>
+                 <div id="original-text-display" class="bg-gray-800/50 border border-gray-700 rounded-xl p-4 text-lg min-h-[56px] flex flex-wrap items-center"></div>
+            </div>
+
+            <!-- Arrow Down -->
+            <div class="flex justify-center my-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+            </div>
+
+            <!-- Tokens Display -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-gray-300 mb-3">2. In Tokens aufgeteilt</h2>
+                <div id="tokens-container" class="bg-gray-800/50 border border-gray-700 rounded-xl p-4 min-h-[80px] flex flex-wrap gap-3 items-center">
+                    <!-- Tokens will be injected here -->
+                </div>
+            </div>
+            
+            <!-- Arrow Down -->
+            <div class="flex justify-center my-4">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-500 animate-bounce" style="animation-delay: 150ms;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+            </div>
+
+            <!-- IDs Display -->
+            <div>
+                <h2 class="text-xl font-semibold text-gray-300 mb-3">3. In numerische IDs umgewandelt</h2>
+                <div id="ids-container" class="bg-gray-800/50 border border-gray-700 rounded-xl p-4 min-h-[80px] flex flex-wrap gap-3 items-center">
+                    <!-- IDs will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const textInput = document.getElementById('text-input');
+        const tokenizeBtn = document.getElementById('tokenize-btn');
+        const originalTextDisplay = document.getElementById('original-text-display');
+        const tokensContainer = document.getElementById('tokens-container');
+        const idsContainer = document.getElementById('ids-container');
+
+        // A simplified, static vocabulary for demonstration purposes.
+        const vocabulary = {
+            "Künstliche": 23478, "Intelligenz": 456, "transformiert": 9012, "unsere": 333,
+            "Welt": 891, ".": 15, "Der": 5001, "schnelle": 77, "Fuchs": 8080, "springt": 1234,
+            "über": 55, "den": 19, "faulen": 678, "Hund": 9999, "KI": 250, "ist": 251,
+            "faszinierend": 1111, "wie": 42, "funktioniert": 8765, "Token": 255, "ization": 256,
+            "Ich": 731, "würde": 5289, "gerne": 314, "Geld": 8888,
+            // "abheben" is now split into subwords
+            "ab": 4000, "heben": 96,
+            "<UNK>": 999 // Special token for unknown words
+        };
+        
+        tokenizeBtn.addEventListener('click', startAnimation);
+        textInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                startAnimation();
+            }
+        });
+
+        function startAnimation() {
+            const text = textInput.value;
+            if (!text.trim()) return;
+
+            tokenizeBtn.disabled = true;
+            tokenizeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            originalTextDisplay.innerHTML = '';
+            tokensContainer.innerHTML = '';
+            idsContainer.innerHTML = '';
+            
+            const parts = text.split(/(\s+|[.,!?;])/g).filter(part => part);
+
+            const originalWords = [];
+            let currentWord = '';
+
+            parts.forEach(part => {
+                if (/\s+/.test(part) || /[.,!?;]/.test(part)) {
+                    if (currentWord) {
+                        originalWords.push(currentWord);
+                        currentWord = '';
+                    }
+                    originalWords.push(part);
+                } else {
+                    currentWord += part;
+                }
+            });
+            if (currentWord) {
+                originalWords.push(currentWord);
+            }
+            
+            const displayTokens = originalWords.filter(t => t.trim() !== '');
+
+            // Create final tokens with subword splitting
+            const finalTokens = [];
+            const tokenToWordMap = []; // Maps each final token back to its original word index
+            displayTokens.forEach((word, wordIndex) => {
+                if (word === 'abheben') {
+                    finalTokens.push('ab', 'heben');
+                    tokenToWordMap.push(wordIndex, wordIndex);
+                } else {
+                    finalTokens.push(word);
+                    tokenToWordMap.push(wordIndex);
+                }
+            });
+
+            let tokenCounter = 0;
+            originalWords.forEach((token) => {
+                const tokenSpan = document.createElement('span');
+                tokenSpan.textContent = token;
+                if (token.trim() !== '') {
+                    tokenSpan.id = `word-${tokenCounter}`;
+                    tokenCounter++;
+                }
+                originalTextDisplay.appendChild(tokenSpan);
+            });
+            
+            animateWords(finalTokens, tokenToWordMap, 0);
+        }
+
+        function animateWords(tokens, map, index) {
+            if (index >= tokens.length) {
+                // Unhighlight the last word
+                const lastWordIndex = map[index - 1];
+                const lastWordSpan = document.getElementById(`word-${lastWordIndex}`);
+                if (lastWordSpan) lastWordSpan.classList.remove('highlight');
+                
+                tokenizeBtn.disabled = false;
+                tokenizeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                return;
+            }
+
+            const currentToken = tokens[index];
+            const currentWordIndex = map[index];
+            const currentWordSpan = document.getElementById(`word-${currentWordIndex}`);
+            
+            const prevWordIndex = index > 0 ? map[index - 1] : -1;
+
+            // Unhighlight previous word if we are on a new word
+            if (currentWordIndex !== prevWordIndex && prevWordIndex !== -1) {
+                const prevWordSpan = document.getElementById(`word-${prevWordIndex}`);
+                if (prevWordSpan) prevWordSpan.classList.remove('highlight');
+            }
+
+            if(currentWordSpan) currentWordSpan.classList.add('highlight');
+            
+            setTimeout(() => {
+                const tokenCard = document.createElement('div');
+                tokenCard.className = 'token-card bg-emerald-500/20 border border-emerald-500 text-emerald-300 rounded-lg px-3 py-2 text-center';
+                tokenCard.textContent = currentToken;
+                tokensContainer.appendChild(tokenCard);
+                
+                setTimeout(() => tokenCard.classList.add('visible'), 50);
+
+                setTimeout(() => {
+                    let tokenId = vocabulary[currentToken] || vocabulary['<UNK>'];
+
+                    const idCard = document.createElement('div');
+                    idCard.className = 'token-card bg-sky-500/20 border border-sky-500 text-sky-300 rounded-lg px-3 py-2 text-center font-mono';
+                    idCard.textContent = tokenId;
+                    idsContainer.appendChild(idCard);
+                    
+                    setTimeout(() => idCard.classList.add('visible'), 50);
+
+                    setTimeout(() => {
+                        animateWords(tokens, map, index + 1);
+                    }, 500);
+
+                }, 300);
+
+            }, 400);
+        }
+
+        window.onload = startAnimation;
+    </script>
+</body>
+</html>
