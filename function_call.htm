@@ -1,0 +1,206 @@
+<html lang="de"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KI-Funktionsaufruf Visualisierer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+        }
+        .presentation-content {
+            width: 95vw;
+            aspect-ratio: 16 / 9;
+            max-height: 95vh;
+            background: #111827; /* bg-gray-900 */
+            border-radius: 0.5rem;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            box-shadow: 0 0 100px rgba(0, 255, 255, 0.1);
+            border: 1px solid #374151;
+        }
+        .component {
+            transition: all 0.3s ease-in-out;
+            border-width: 1px;
+        }
+        .component.active {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            border-color: #3B82F6; /* blue-500 */
+        }
+        #packet {
+            position: absolute;
+            z-index: 10;
+            opacity: 0;
+            transition: all 1.5s ease-in-out;
+            width: 50px;
+            height: 50px;
+        }
+        .icon {
+            width: 48px;
+            height: 48px;
+        }
+    </style>
+</head>
+<body class="bg-black">
+    <div class="presentation-container">
+        <div class="presentation-content">
+            <div class="w-full max-w-6xl">
+                <div class="text-center mb-8">
+                    <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400">Function Calling Visualisiert</h1>
+                </div>
+
+                <div id="visualization-container" class="relative w-full p-8">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+                        <!-- Component 1: Client -->
+                        <div id="client" class="component bg-gray-800/50 border-gray-700 p-4 rounded-xl flex flex-col items-center text-center">
+                            <div class="icon text-sky-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 0h4.5m-4.5 0a3 3 0 0 0-3 3v1.5a3 3 0 0 0 3 3h4.5a3 3 0 0 0 3-3v-1.5a3 3 0 0 0-3-3m-4.5 0H14.25M5.25 6H9m3 0h3.75M3 15h18M3 15a2.25 2.25 0 0 0-2.25 2.25v1.5A2.25 2.25 0 0 0 3 21h18a2.25 2.25 0 0 0 2.25-2.25v-1.5A2.25 2.25 0 0 0 21 15M3 15v-4.5A2.25 2.25 0 0 1 5.25 8.25h13.5A2.25 2.25 0 0 1 21 10.5V15"></path></svg>
+                            </div>
+                            <h2 class="font-bold mt-2 text-white">Ihr Gerät</h2>
+                            <p class="text-sm text-gray-400">LLM-Client</p>
+                        </div>
+
+                        <!-- Component 2: Host -->
+                        <div id="host" class="component bg-gray-800/50 border-gray-700 p-4 rounded-xl flex flex-col items-center text-center">
+                            <div class="icon text-emerald-400">
+                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 17.25v-.228a4.5 4.5 0 0 0-.12-1.03l-2.268-9.64a3.375 3.375 0 0 0-3.285-2.602H7.926a3.375 3.375 0 0 0-3.285 2.602l-2.268 9.64a4.5 4.5 0 0 0-.12 1.03v.228m19.5 0a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3m19.5 0a3 3 0 0 0-3-3H5.25a3 3 0 0 0-3 3m16.5 0h.008v.008h-.008v-.008Zm-3 0h.008v.008h-.008v-.008Z"></path></svg>
+                            </div>
+                            <h2 class="font-bold mt-2 text-white">MCP Server</h2>
+                            <p class="text-sm text-gray-400">Host</p>
+                        </div>
+
+                        <!-- Component 3: Tool -->
+                        <div id="tool" class="component bg-gray-800/50 border-gray-700 p-4 rounded-xl flex flex-col items-center text-center">
+                            <div class="icon text-violet-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.604-3.603l5.654-4.655M12 2.25a.75.75 0 0 0-1.5 0v1.5M12 9.75a.75.75 0 0 0-1.5 0v1.5M12 17.25a.75.75 0 0 0-1.5 0v1.5M5.25 12a.75.75 0 0 0 0-1.5H3.75a.75.75 0 0 0 0 1.5H5.25Zm13.5 0a.75.75 0 0 0 0-1.5H16.5a.75.75 0 0 0 0 1.5h2.25Z"></path></svg>
+                            </div>
+                            <h2 class="font-bold mt-2 text-white">Geldautomaten-API</h2>
+                            <p class="text-sm text-gray-400">Externes Tool</p>
+                        </div>
+
+                        <!-- Component 4: LLM -->
+                        <div id="llm" class="component bg-gray-800/50 border-gray-700 p-4 rounded-xl flex flex-col items-center text-center">
+                            <div class="icon text-red-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V8.25a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 8.25v7.5a2.25 2.25 0 0 0 2.25 2.25Z"></path></svg>
+                            </div>
+                            <h2 class="font-bold mt-2 text-white">KI-Gehirn</h2>
+                            <p class="text-sm text-gray-400">LLM</p>
+                        </div>
+                    </div>
+
+                    <!-- The moving packet -->
+                    <div id="packet" class="bg-sky-500 rounded-lg shadow-2xl flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-white">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Explanation Box -->
+                <div class="w-full max-w-4xl mt-8 mx-auto">
+                    <div id="explanation-box" class="w-full bg-gray-800/50 border border-gray-700 p-4 rounded-lg shadow-md min-h-[80px] flex items-center justify-center">
+                        <p id="explanation-text" class="text-gray-300 text-center text-lg"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const client = document.getElementById('client');
+        const host = document.getElementById('host');
+        const tool = document.getElementById('tool');
+        const llm = document.getElementById('llm');
+        const packet = document.getElementById('packet');
+        const explanationText = document.getElementById('explanation-text');
+        const vizContainer = document.getElementById('visualization-container');
+
+        const components = { client, host, tool, llm };
+
+        const steps = [
+            { from: 'client', to: 'host', text: 'Prompt: "Wo ist der nächste Geldautomat?"', explanation: '1. Sie senden eine Anfrage, die Standortdaten benötigt.' },
+            { from: 'host', to: 'llm', text: 'Prompt: "Wo ist der nächste Geldautomat?"', explanation: '2. Der MCP Server leitet Ihre Anfrage an die KI weiter.' },
+            { from: 'llm', to: 'host', text: 'Tool Call: find_atm(location=CURRENT_LOCATION)', explanation: '3. Die KI bittet den MCP Server, ein Tool auszuführen.' },
+            { from: 'host', to: 'tool', text: 'Execute: find_atm(location=CURRENT_LOCATION)', explanation: '4. Der MCP Server ruft das externe Tool auf (Geldautomaten-API).' },
+            { from: 'tool', to: 'host', text: 'Resultat: "Geldautomat bei [Beispielstraße 123]"', explanation: '5. Das Tool gibt die Informationen an den MCP Server zurück.' },
+            { from: 'host', to: 'llm', text: 'Resultat: "Geldautomat bei [Beispielstraße 123]"', explanation: '6. Der MCP Server sendet das Ergebnis an die KI zurück.' },
+            { from: 'llm', to: 'llm', text: 'Generiere finale Antwort...', explanation: '7. Die KI kombiniert die neuen Daten, um eine Antwort zu erstellen.' },
+            { from: 'llm', to: 'host', text: 'Antwort: "Der nächste Geldautomat ist..."', explanation: '8. Die KI sendet die endgültige Antwort an den MCP Server.' },
+            { from: 'host', to: 'client', text: 'Antwort: "Der nächste Geldautomat ist..."', explanation: '9. Der MCP Server übermittelt die Antwort an Ihr Gerät.' }
+        ];
+
+        const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        const getPosition = (element) => {
+            const vizRect = vizContainer.getBoundingClientRect();
+            const elemRect = element.getBoundingClientRect();
+            return {
+                top: elemRect.top - vizRect.top + (element.offsetHeight / 2) - (packet.offsetHeight / 2),
+                left: elemRect.left - vizRect.left + (element.offsetWidth / 2) - (packet.offsetWidth / 2),
+            };
+        };
+
+        async function runFullSimulation() {
+            while (true) { // Loop the animation indefinitely
+                explanationText.innerHTML = "Simulation wird gestartet...";
+                await wait(2000);
+
+                for (const step of steps) {
+                    const fromEl = components[step.from];
+                    const toEl = components[step.to];
+
+                    explanationText.innerHTML = `<div class="text-left w-full"><p class="font-semibold text-gray-300">${step.explanation}</p><p class="font-mono text-sky-300 mt-2 bg-gray-900 p-2 rounded-md text-sm">${step.text}</p></div>`;
+
+                    Object.values(components).forEach(c => c.classList.remove('active'));
+                    fromEl.classList.add('active');
+                    if (step.from !== step.to) toEl.classList.add('active');
+
+                    const startPos = getPosition(fromEl);
+                    packet.style.transition = 'none';
+                    packet.style.top = `${startPos.top}px`;
+                    packet.style.left = `${startPos.left}px`;
+                    packet.style.opacity = '1';
+
+                    await wait(200); // Pause to show the initial state
+
+                    const endPos = getPosition(toEl);
+                    const duration = (step.from === 'llm' && step.to === 'llm') ? 1.5 : 1.5;
+                    packet.style.transition = `all ${duration}s ease-in-out`;
+                    packet.style.top = `${endPos.top}px`;
+                    packet.style.left = `${endPos.left}px`;
+
+                    await wait(duration * 1000 + 1500); // Wait for animation + a little pause
+                }
+
+                explanationText.innerHTML = "Simulation wird neugestartet...";
+                Object.values(components).forEach(c => c.classList.remove('active'));
+                packet.style.opacity = '0';
+                await wait(2000); // Pause before restarting
+            }
+        }
+
+        window.onload = () => {
+            const initialPos = getPosition(components.client);
+            packet.style.top = `${initialPos.top}px`;
+            packet.style.left = `${initialPos.left}px`;
+            runFullSimulation();
+        };
+
+    </script>
+
+</body></html>
