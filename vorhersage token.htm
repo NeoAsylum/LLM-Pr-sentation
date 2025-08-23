@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformer Vorhersage Animation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .token {
+            transition: all 0.5s ease-in-out;
+            transform-origin: center;
+            position: relative;
+        }
+        .token-embedding {
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+        .positional-encoded {
+            background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.08) 75%, transparent 75%, transparent);
+            background-size: 20px 20px;
+        }
+        .attention-line {
+            position: absolute;
+            background: linear-gradient(to top, rgba(0, 255, 255, 0.7), rgba(167, 243, 208, 0.7));
+            height: 2px;
+            transform-origin: left center;
+            transition: all 0.5s ease-out;
+            opacity: 0;
+            width: 0;
+        }
+        .processing-animation {
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.4); transform: scale(1); }
+            50% { box-shadow: 0 0 35px rgba(0, 255, 255, 0.8); transform: scale(1.05); }
+        }
+        .prediction-vector-wrapper, .prediction-segment {
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .vector-label {
+            position: absolute;
+            bottom: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4a5568;
+            color: #a0aec0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .vector-label.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4 overflow-hidden">
+    <div id="attention-container" class="absolute top-0 left-0 w-full h-full pointer-events-none z-10"></div>
+
+    <div class="w-full max-w-7xl aspect-video bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col">
+        <div class="text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-cyan-400 mb-2">Transformer-Architektur in Aktion</h1>
+        </div>
+
+        <!-- Statusanzeige -->
+        <div id="status-display" class="text-center bg-gray-900/50 rounded-lg py-2 px-4 mb-6 min-h-[40px] flex items-center justify-center">
+            <p id="status-text" class="text-lg text-emerald-300 font-medium transition-opacity duration-300"></p>
+        </div>
+
+        <!-- Container für Tokens -->
+        <div id="sentence-container" class="bg-gray-900/50 rounded-lg p-6 mb-2 flex-grow flex items-center justify-center flex-wrap gap-4">
+            <!-- Tokens werden hier dynamisch eingefügt -->
+        </div>
+        
+        <!-- Container für den nächsten Token Placeholder -->
+        <div id="placeholder-container" class="min-h-[100px] flex items-center justify-center">
+            <!-- Placeholder '?' wird hier angezeigt -->
+        </div>
+
+        <!-- Container für die Vorhersagen -->
+        <div class="min-h-[100px] flex items-center justify-center" id="predictions-container"></div>
+
+        <!-- Steuerung -->
+        <div class="mt-8 text-center">
+            <button id="restart-button" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-8 rounded-lg transition-transform duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-cyan-300">
+                Neustart
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM-Elemente ---
+        const sentenceContainer = document.getElementById('sentence-container');
+        const placeholderContainer = document.getElementById('placeholder-container');
+        const predictionsContainer = document.getElementById('predictions-container');
+        const restartButton = document.getElementById('restart-button');
+        const attentionContainer = document.getElementById('attention-container');
+        const statusText = document.getElementById('status-text');
+
+        // --- Animationsdaten ---
+        const sentencePrefix = "Ich würde gerne Geld abheben. Ich ";
+        const animationSteps = [
+            { predictions: [ { word: "wüsste", prob: 0.88 }, { word: "möchte", prob: 0.09 }, { word: "suche", prob: 0.03 } ], attention: [ {token: 'Ich', weight: 0.9} ] },
+            { predictions: [ { word: "gerne", prob: 0.95 }, { word: "jetzt", prob: 0.04 }, { word: "mal", prob: 0.01 } ], attention: [ {token: 'wüsste', weight: 0.9}, {token: 'Ich', weight: 0.7} ] },
+            { predictions: [ { word: "wo", prob: 0.99 }, { word: "ob", prob: 0.01 }, { word: "wann", prob: 0.00 } ], attention: [ {token: 'gerne', weight: 0.8}, {token: 'abheben.', weight: 0.6} ] },
+            { predictions: [ { word: "sich", prob: 0.92 }, { word: "ist", prob: 0.06 }, { word: "man", prob: 0.02 } ], attention: [ {token: 'wo', weight: 0.9} ] },
+            { predictions: [ { word: "der", prob: 0.85 }, { word: "ein", prob: 0.12 }, { word: "hier", prob: 0.03 } ], attention: [ {token: 'sich', weight: 0.7}, {token: 'wo', weight: 0.8} ] },
+            { predictions: [ { word: "nächste", prob: 0.94 }, { word: "beste", prob: 0.03 }, { word: "nächstgelegene", prob: 0.03 } ], attention: [ {token: 'der', weight: 0.9}, {token: 'Geld', weight: 0.5} ] },
+            { predictions: [ { word: "Geldautomat", prob: 0.91 }, { word: "Bankautomat", prob: 0.07 }, { word: "Automat", prob: 0.02 } ], attention: [ {token: 'nächste', weight: 0.9}, {token: 'Geld', weight: 0.8}, {token: 'abheben.', weight: 0.7} ] },
+            { predictions: [ { word: "befindet?", prob: 0.96 }, { word: "ist?", prob: 0.03 }, { word: "steht?", prob: 0.01 } ], attention: [ {token: 'Geldautomat', weight: 0.9}, {token: 'wo', weight: 0.85}, {token: 'sich', weight: 0.7} ] }
+        ];
+
+        let currentStep = 0;
+        let timeouts = [];
+
+        // --- Hauptfunktionen ---
+
+        function setStatus(text) {
+            statusText.style.opacity = '0';
+            setTimeout(() => {
+                statusText.textContent = text;
+                statusText.style.opacity = '1';
+            }, 200);
+        }
+
+        async function startAnimation() {
+            resetAnimation();
+            restartButton.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            setStatus('1. Tokenisierung des Inputs');
+            const prefixTokens = sentencePrefix.split(/\s+/);
+            for (const tokenText of prefixTokens) {
+                if (tokenText) createToken(tokenText, false, sentenceContainer);
+            }
+            await delay(3000);
+
+            setStatus('2. Word Embedding: Bedeutung wird kodiert');
+            document.querySelectorAll('.token').forEach((el, index) => {
+                setTimeout(() => el.classList.add('token-embedding', 'bg-emerald-500/50'), index * 50);
+            });
+            await delay(3000);
+
+            setStatus('3. Positional Encoding: Position wird hinzugefügt');
+            document.querySelectorAll('.token').forEach((el, index) => {
+                setTimeout(() => el.classList.add('positional-encoded'), index * 50);
+            });
+            await delay(3000);
+
+            runNextStep();
+        }
+        
+        async function runNextStep() {
+            if (currentStep >= animationSteps.length) {
+                setStatus('Satzgenerierung abgeschlossen.');
+                restartButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                return;
+            }
+
+            setStatus('4. Self-Attention: Query vergleicht sich mit Keys');
+            const nextTokenPlaceholder = createToken('?', true, placeholderContainer, 'Query-Vektor');
+            await delay(500);
+            drawAttentionLines(nextTokenPlaceholder, animationSteps[currentStep].attention);
+            await delay(3000);
+
+            setStatus('5. Verarbeitung & Vorhersage');
+            nextTokenPlaceholder.classList.add('processing-animation');
+            clearAttentionLines();
+            document.querySelectorAll('.vector-label').forEach(l => l.classList.remove('visible'));
+            await delay(2000);
+
+            nextTokenPlaceholder.parentElement.remove();
+            displayPredictions(animationSteps[currentStep].predictions);
+            await delay(2800);
+
+            setStatus('6. Auswahl & Einfügen');
+            const bestPrediction = animationSteps[currentStep].predictions[0];
+            predictionsContainer.innerHTML = '';
+            
+            const newToken = createToken(bestPrediction.word, false, sentenceContainer);
+            newToken.classList.add('scale-125', 'opacity-50');
+            await delay(100);
+            
+            newToken.classList.add('token-embedding', 'positional-encoded', 'bg-emerald-500/50');
+            newToken.classList.remove('scale-125', 'opacity-50');
+
+            currentStep++;
+            await delay(1000);
+            runNextStep();
+        }
+        
+        function createToken(text, isPlaceholder, container, labelText = '') {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'relative';
+
+            const tokenEl = document.createElement('div');
+            tokenEl.textContent = text;
+            tokenEl.dataset.token = text;
+            tokenEl.className = `token p-2 md:p-3 rounded-md text-lg md:text-xl font-semibold transition-all duration-500 ${isPlaceholder ? 'bg-cyan-500/50 border-2 border-cyan-400' : 'bg-gray-700'}`;
+            
+            wrapper.appendChild(tokenEl);
+
+            if (labelText) {
+                const labelEl = document.createElement('div');
+                labelEl.textContent = labelText;
+                labelEl.className = 'vector-label';
+                wrapper.appendChild(labelEl);
+                setTimeout(() => labelEl.classList.add('visible'), 100);
+            }
+            
+            container.appendChild(wrapper);
+            return tokenEl;
+        }
+
+        function drawAttentionLines(targetEl, attentionWeights) {
+            const targetRect = targetEl.getBoundingClientRect();
+            const targetX = targetRect.left + targetRect.width / 2;
+            const targetY = targetRect.top + targetRect.height / 2;
+
+            const sourceTokens = Array.from(document.querySelectorAll('#sentence-container .token'));
+
+            attentionWeights.forEach(aw => {
+                const sourceEl = [...sourceTokens].reverse().find(el => el.dataset.token === aw.token);
+                if (!sourceEl) return;
+
+                // Show Key/Value Label
+                const label = createTokenLabel(sourceEl, 'Key/Value');
+                setTimeout(() => label.remove(), 2500);
+
+                const sourceRect = sourceEl.getBoundingClientRect();
+                const sourceX = sourceRect.left + sourceRect.width / 2;
+                const sourceY = sourceRect.top + sourceRect.height / 2;
+                
+                const angle = Math.atan2(targetY - sourceY, targetX - sourceX) * 180 / Math.PI;
+                const distance = Math.sqrt(Math.pow(targetX - sourceX, 2) + Math.pow(targetY - sourceY, 2));
+
+                const line = document.createElement('div');
+                line.className = 'attention-line';
+                line.style.left = `${sourceX}px`;
+                line.style.top = `${sourceY}px`;
+                line.style.transform = `rotate(${angle}deg)`;
+                line.style.opacity = 0.1 + aw.weight * 0.9;
+                
+                attentionContainer.appendChild(line);
+                setTimeout(() => line.style.width = `${distance}px`, 50);
+            });
+        }
+        
+        function createTokenLabel(tokenEl, text) {
+             const labelEl = document.createElement('div');
+             labelEl.textContent = text;
+             labelEl.className = 'vector-label';
+             tokenEl.parentElement.appendChild(labelEl);
+             setTimeout(() => labelEl.classList.add('visible'), 50);
+             return labelEl;
+        }
+
+        function displayPredictions(predictions) {
+            const vectorWrapper = document.createElement('div');
+            vectorWrapper.className = 'prediction-vector-wrapper flex w-full h-20 bg-gray-700/50 rounded-lg overflow-hidden border-2 border-transparent divide-x divide-gray-600';
+            predictionsContainer.appendChild(vectorWrapper);
+
+            predictions.forEach((pred, index) => {
+                const segment = document.createElement('div');
+                segment.className = `prediction-segment h-full flex flex-1 flex-col items-center justify-center text-center p-2 relative overflow-hidden ${index === 0 ? 'bg-cyan-500/30' : ''}`;
+                segment.style.opacity = '0';
+                segment.innerHTML = `<span class="font-semibold text-lg whitespace-nowrap ${index === 0 ? 'text-cyan-300' : 'text-white'}">"${pred.word}"</span><span class="text-sm whitespace-nowrap ${index === 0 ? 'text-cyan-400' : 'text-gray-400'}">Score: ${(pred.prob * 100).toFixed(0)}%</span>`;
+                vectorWrapper.appendChild(segment);
+                setTimeout(() => {
+                    segment.style.opacity = '1';
+                    if (index === 0) vectorWrapper.classList.add('border-cyan-400');
+                }, 150 * (index + 1));
+            });
+            setTimeout(() => vectorWrapper.classList.add('visible'), 50);
+        }
+
+        function clearAttentionLines() {
+            attentionContainer.innerHTML = '';
+        }
+
+        function resetAnimation() {
+            timeouts.forEach(clearTimeout);
+            timeouts = [];
+            currentStep = 0;
+            sentenceContainer.innerHTML = '';
+            placeholderContainer.innerHTML = '';
+            predictionsContainer.innerHTML = '';
+            clearAttentionLines();
+            setStatus('');
+            restartButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => {
+                const t = setTimeout(resolve, ms);
+                timeouts.push(t);
+            });
+        }
+
+        restartButton.addEventListener('click', startAnimation);
+        window.addEventListener('load', startAnimation);
+    </script>
+</body>
+</html>
