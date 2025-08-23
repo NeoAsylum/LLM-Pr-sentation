@@ -11,7 +11,30 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            overflow: hidden; /* Verhindert Scrollen während der Animation */
+            overflow: hidden;
+        }
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+        }
+        .presentation-content {
+            width: 95vw;
+            aspect-ratio: 16 / 9;
+            max-height: 95vh;
+            background: #111827; /* bg-gray-900 */
+            border-radius: 0.5rem;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            box-shadow: 0 0 100px rgba(0, 255, 255, 0.1);
+            border: 1px solid #374151;
         }
         .token-card {
             transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -22,18 +45,16 @@
             transform: scale(1);
             opacity: 1;
         }
-        .highlight {
-            background-color: #facc15; /* yellow-400 */
-            color: #1f2937; /* gray-800 */
-            border-radius: 4px;
-            padding: 0 2px;
-            transition: all 0.3s ease-in-out;
+        .highlight-input {
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.4);
+            border-color: #0ea5e9;
         }
     </style>
 </head>
-<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
-
-    <div class="w-full max-w-4xl mx-auto p-4 md:p-8">
+<body class="bg-black">
+    <div class="presentation-container">
+        <div class="presentation-content">
+            <div class="w-full max-w-5xl">
         <div class="text-center mb-8">
             <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400">Tokenization Visualisiert</h1>
             <p class="text-gray-400 mt-2 text-lg">Wie Sprachmodelle Text verstehen</p>
@@ -52,22 +73,9 @@
 
         <!-- Animation Display -->
         <div class="mt-8 relative">
-            <!-- Original Text Display -->
-            <div class="mb-6">
-                 <h2 class="text-xl font-semibold text-gray-300 mb-3">1. Originaltext</h2>
-                 <div id="original-text-display" class="bg-gray-800/50 border border-gray-700 rounded-xl p-4 text-lg min-h-[56px] flex flex-wrap items-center"></div>
-            </div>
-
-            <!-- Arrow Down -->
-            <div class="flex justify-center my-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
-            </div>
-
             <!-- Tokens Display -->
             <div class="mb-6">
-                <h2 class="text-xl font-semibold text-gray-300 mb-3">2. In Tokens aufgeteilt</h2>
+                <h2 class="text-xl font-semibold text-gray-300 mb-3">1. In Tokens aufgeteilt</h2>
                 <div id="tokens-container" class="bg-gray-800/50 border border-gray-700 rounded-xl p-4 min-h-[80px] flex flex-wrap gap-3 items-center">
                     <!-- Tokens will be injected here -->
                 </div>
@@ -82,7 +90,7 @@
 
             <!-- IDs Display -->
             <div>
-                <h2 class="text-xl font-semibold text-gray-300 mb-3">3. In numerische IDs umgewandelt</h2>
+                <h2 class="text-xl font-semibold text-gray-300 mb-3">2. In numerische IDs umgewandelt</h2>
                 <div id="ids-container" class="bg-gray-800/50 border border-gray-700 rounded-xl p-4 min-h-[80px] flex flex-wrap gap-3 items-center">
                     <!-- IDs will be injected here -->
                 </div>
@@ -94,7 +102,6 @@
         // DOM Elements
         const textInput = document.getElementById('text-input');
         const tokenizeBtn = document.getElementById('tokenize-btn');
-        const originalTextDisplay = document.getElementById('original-text-display');
         const tokensContainer = document.getElementById('tokens-container');
         const idsContainer = document.getElementById('ids-container');
 
@@ -123,8 +130,8 @@
 
             tokenizeBtn.disabled = true;
             tokenizeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            textInput.classList.add('highlight-input');
 
-            originalTextDisplay.innerHTML = '';
             tokensContainer.innerHTML = '';
             idsContainer.innerHTML = '';
             
@@ -152,56 +159,26 @@
 
             // Create final tokens with subword splitting
             const finalTokens = [];
-            const tokenToWordMap = []; // Maps each final token back to its original word index
-            displayTokens.forEach((word, wordIndex) => {
+            displayTokens.forEach((word) => {
                 if (word === 'abheben') {
                     finalTokens.push('ab', 'heben');
-                    tokenToWordMap.push(wordIndex, wordIndex);
                 } else {
                     finalTokens.push(word);
-                    tokenToWordMap.push(wordIndex);
                 }
-            });
-
-            let tokenCounter = 0;
-            originalWords.forEach((token) => {
-                const tokenSpan = document.createElement('span');
-                tokenSpan.textContent = token;
-                if (token.trim() !== '') {
-                    tokenSpan.id = `word-${tokenCounter}`;
-                    tokenCounter++;
-                }
-                originalTextDisplay.appendChild(tokenSpan);
             });
             
-            animateWords(finalTokens, tokenToWordMap, 0);
+            animateWords(finalTokens, 0);
         }
 
-        function animateWords(tokens, map, index) {
+        function animateWords(tokens, index) {
             if (index >= tokens.length) {
-                // Unhighlight the last word
-                const lastWordIndex = map[index - 1];
-                const lastWordSpan = document.getElementById(`word-${lastWordIndex}`);
-                if (lastWordSpan) lastWordSpan.classList.remove('highlight');
-                
+                textInput.classList.remove('highlight-input');
                 tokenizeBtn.disabled = false;
                 tokenizeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 return;
             }
 
             const currentToken = tokens[index];
-            const currentWordIndex = map[index];
-            const currentWordSpan = document.getElementById(`word-${currentWordIndex}`);
-            
-            const prevWordIndex = index > 0 ? map[index - 1] : -1;
-
-            // Unhighlight previous word if we are on a new word
-            if (currentWordIndex !== prevWordIndex && prevWordIndex !== -1) {
-                const prevWordSpan = document.getElementById(`word-${prevWordIndex}`);
-                if (prevWordSpan) prevWordSpan.classList.remove('highlight');
-            }
-
-            if(currentWordSpan) currentWordSpan.classList.add('highlight');
             
             setTimeout(() => {
                 const tokenCard = document.createElement('div');
@@ -222,7 +199,7 @@
                     setTimeout(() => idCard.classList.add('visible'), 50);
 
                     setTimeout(() => {
-                        animateWords(tokens, map, index + 1);
+                        animateWords(tokens, index + 1);
                     }, 500);
 
                 }, 300);
