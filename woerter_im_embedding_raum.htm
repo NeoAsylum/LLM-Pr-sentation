@@ -55,17 +55,26 @@
         controls.dampingFactor = 0.05;
         controls.screenSpacePanning = false;
         controls.minDistance = 2;
-        controls.maxDistance = 20;
+        controls.maxDistance = 50; // Increased max distance
 
-        camera.position.z = 10;
+        camera.position.set(8, 4, 12); // Better initial camera position
         
         const rotatingGroup = new THREE.Group();
         scene.add(rotatingGroup);
         
         rotatingGroup.rotation.x = 0.2;
 
-        const axesHelper = new THREE.AxesHelper(5);
-        rotatingGroup.add(axesHelper);
+        // --- Grid and Axes ---
+        const gridHelper = new THREE.GridHelper(30, 30, 0x444444, 0x333333);
+        gridHelper.position.y = -8; // Lower the grid
+        rotatingGroup.add(gridHelper);
+
+        const axisLength = 10;
+        const axesData = [
+            { dir: new THREE.Vector3(1, 0, 0), color: 0xff7777, label: 'X' },
+            { dir: new THREE.Vector3(0, 1, 0), color: 0x77ff77, label: 'Y' },
+            { dir: new THREE.Vector3(0, 0, 1), color: 0x7777ff, label: 'Z' }
+        ];
 
         // --- Data: Words and their 3D coordinates ---
         const words = [
@@ -89,6 +98,34 @@
         // --- Create Objects in Scene ---
         const fontLoader = new THREE.FontLoader();
         fontLoader.load('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/fonts/gentilis_regular.typeface.json', (font) => {
+            // Add Axes Lines and Labels
+            axesData.forEach(axis => {
+                // Positive Axis
+                let geometry = new THREE.BufferGeometry().setFromPoints([ new THREE.Vector3(0,0,0), axis.dir.clone().multiplyScalar(axisLength) ]);
+                let line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: axis.color, linewidth: 2 }));
+                rotatingGroup.add(line);
+                
+                // Negative Axis (dashed)
+                geometry = new THREE.BufferGeometry().setFromPoints([ new THREE.Vector3(0,0,0), axis.dir.clone().multiplyScalar(-axisLength) ]);
+                const lineDashed = new THREE.Line(geometry, new THREE.LineDashedMaterial({ color: axis.color, dashSize: 0.5, gapSize: 0.2, linewidth: 2 }));
+                lineDashed.computeLineDistances();
+                rotatingGroup.add(lineDashed);
+
+
+                if (axis.label) {
+                    const textGeo = new THREE.TextGeometry(axis.label, {
+                        font: font,
+                        size: 0.5,
+                        height: 0.05,
+                    });
+                    textGeo.center();
+                    const textMat = new THREE.MeshBasicMaterial({ color: axis.color });
+                    const textMesh = new THREE.Mesh(textGeo, textMat);
+                    textMesh.position.copy(axis.dir.clone().multiplyScalar(axisLength + 0.8));
+                    rotatingGroup.add(textMesh);
+                }
+            });
+
             words.forEach(word => {
                 // Create sphere for the word
                 const sphereGeometry = new THREE.SphereGeometry(0.15, 32, 32);
