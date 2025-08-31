@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neural Network Backpropagation Animation</title>
+    <title>Neuronales Netz Backpropagation Animation</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,8 +12,9 @@
             font-family: 'Inter', sans-serif;
         }
         .link {
-            stroke-width: 5px;
-            stroke-opacity: 0.5;
+            stroke-width: 3px;
+            stroke-opacity: 1.0;
+            filter: drop-shadow( 0px 0px 1.5px black );
         }
         .node {
             stroke: #4b5563;
@@ -61,28 +62,21 @@
 
     <div class="container mx-auto p-4 md:p-8 max-w-7xl">
         <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-900">Neural Network Animation</h1>
-            <p class="text-lg text-gray-600 mt-2">Watch the network learn through forward and backward passes.</p>
+            <h1 class="text-4xl font-bold text-gray-900">Training eines Neuronalen Netzwerks</h1>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <!-- Left Panel: Controls and Info -->
+            <!-- Left Panel: Info -->
             <div class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg">
-                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Controls</h2>
-                <div class="space-y-3 mb-6">
-                    <button id="play-pause-btn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 shadow-sm">Play</button>
-                    <button id="reset-btn" class="w-full bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition duration-300 shadow-sm mt-4">Reset Weights</button>
-                </div>
-                
-                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Current Example</h2>
+                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Aktuelles Beispiel</h2>
                  <div class="bg-gray-50 p-3 rounded-lg text-center">
-                    <p class="font-medium text-gray-800">Input: <span id="input-values" class="font-mono">[0.9, 0.2, 0.1]</span></p>
-                    <p class="font-medium text-gray-800">Target: <span id="target-values" class="font-mono">[1, 0] (Tulip)</span></p>
+                    <p class="font-medium text-gray-800">Eingabe: <span id="input-values" class="font-mono"></span></p>
+                    <p class="font-medium text-gray-800">Ziel: <span id="target-values" class="font-mono"></span></p>
                 </div>
 
                 <h2 class="text-2xl font-semibold my-4 border-b pb-2">Status</h2>
                 <div id="status-box" class="space-y-2 text-gray-700 bg-gray-50 p-3 rounded-lg h-32 flex items-center justify-center">
-                   <p class="text-center">Press "Play" to start the animation.</p>
+                   <p class="text-center">Animation startet in 3 Sekunden...</p>
                 </div>
             </div>
 
@@ -103,7 +97,7 @@
                 this.inputNodes = inputNodes;
                 this.hiddenNodes = hiddenNodes;
                 this.outputNodes = outputNodes;
-                this.learningRate = 0.5;
+                this.learningRate = 0.7;
                 this.reset();
             }
 
@@ -129,13 +123,22 @@
 
             calculateDeltas(targetArray) {
                 const outputErrors = targetArray.map((target, i) => target - this.outputs[i]);
-                const outputGradients = this.outputs.map((o, i) => sigmoidDerivative(o) * outputErrors[i] * this.learningRate);
                 
+                // Calculate output layer gradients (delta_k * learning_rate)
+                const outputGradients = this.outputs.map((o, i) => sigmoidDerivative(o) * outputErrors[i] * this.learningRate);
+
+                // Calculate output deltas (used for backpropagation)
+                const outputDeltas = this.outputs.map((o, i) => sigmoidDerivative(o) * outputErrors[i]);
+
+                // Calculate hidden layer errors by backpropagating output deltas
                 const hiddenErrors = this.weights_ho[0].map((_, h) => 
-                    this.weights_ho.reduce((acc, weights, o) => acc + weights[h] * outputErrors[o], 0)
+                    this.weights_ho.reduce((acc, weights, o) => acc + weights[h] * outputDeltas[o], 0)
                 );
+
+                // Calculate hidden layer gradients (delta_h * learning_rate)
                 const hiddenGradients = this.hidden.map((h, i) => sigmoidDerivative(h) * hiddenErrors[i] * this.learningRate);
 
+                // Calculate weight changes
                 this.delta_ho = outputGradients.map(og => this.hidden.map(h => og * h));
                 this.delta_o_bias = [...outputGradients];
                 
@@ -159,10 +162,15 @@
         // --- Visualization Logic ---
         document.addEventListener('DOMContentLoaded', () => {
             const network = new NeuralNetwork(3, 4, 2);
-            const example = { inputs: [0.9, 0.2, 0.1], targets: [1, 0] }; // Target: Tulip
+            
+            const examples = [
+                { inputs: [0.9, 0.2, 0.1], targets: [1, 0], label: "Tulpe" },
+                { inputs: [0.4, 0.9, 0.8], targets: [0, 1], label: "Rose" },
+                { inputs: [0.8, 0.3, 0.2], targets: [1, 0], label: "Tulpe" },
+                { inputs: [0.5, 0.8, 0.9], targets: [0, 1], label: "Rose" }
+            ];
+            let exampleIndex = 0;
 
-            const playPauseBtn = document.getElementById('play-pause-btn');
-            const resetBtn = document.getElementById('reset-btn');
             const statusBox = document.getElementById('status-box');
 
             const svgContainer = d3.select("#network-visualization");
@@ -171,8 +179,8 @@
             const svg = svgContainer.append("svg").attr("width", width).attr("height", height);
 
             const nodeRadius = 15;
-            const inputLabels = ["Stem Length", "Flower Color", "Leaf Shape"];
-            const outputLabels = ["Tulip", "Rose"];
+            const inputLabels = ["Stiellänge", "Blütenfarbe", "Blattform"];
+            const outputLabels = ["Tulpe", "Rose"];
 
             const nodes = {
                 input: d3.range(network.inputNodes).map(i => ({ layer: 0, index: i, label: inputLabels[i] })),
@@ -196,9 +204,6 @@
             const linkGroup = svg.append("g").attr("class", "links");
             const nodeGroup = svg.append("g").attr("class", "nodes");
             const labelGroup = svg.append("g").attr("class", "labels");
-
-            let animationInterval = null;
-            let isPlaying = false;
 
             function getLinksAndDeltas() {
                 const links = [];
@@ -280,7 +285,7 @@
                 .attr("x", d => (d.source.x + d.target.x) / 2)
                 .attr("y", d => (d.source.y + d.target.y) / 2 - 5)
                 .attr("text-anchor", "middle")
-                .text(d => d.weight.toFixed(2));
+                .text(d => d.weight.toFixed(3));
                 
                 labelGroup.selectAll(".node-label").data(visibleNodes).join("text")
                     .attr("class", "node-label")
@@ -295,8 +300,14 @@
             }
 
             async function animationStep() {
+                const example = examples[exampleIndex];
+                
+                // Update example display
+                document.getElementById('input-values').textContent = `[${example.inputs.join(', ')}]`;
+                document.getElementById('target-values').textContent = `[${example.targets.join(', ')}] (${example.label})`;
+
                 // 1. Forward Pass
-                statusBox.innerHTML = `<p class="font-semibold text-blue-600">Forward Pass...</p>`;
+                statusBox.innerHTML = `<p class="font-semibold text-blue-600">Vorwärtsdurchlauf...</p>`;
                 network.feedforward(example.inputs);
                 updateDynamicElements();
                 await new Promise(r => setTimeout(r, 1000));
@@ -306,13 +317,13 @@
                 const target = example.targets;
                 const error = [target[0] - outputs[0], target[1] - outputs[1]];
                 statusBox.innerHTML = `
-                    <p class="font-semibold text-red-600">Calculating Error</p>
+                    <p class="font-semibold text-red-600">Fehlerberechnung</p>
                     <p class="font-mono text-sm">(${error[0].toFixed(2)}, ${error[1].toFixed(2)})</p>
                 `;
                 await new Promise(r => setTimeout(r, 1000));
 
                 // 3. Calculate Deltas
-                statusBox.innerHTML = `<p class="font-semibold text-yellow-600">Calculating Weight Changes...</p>`;
+                statusBox.innerHTML = `<p class="font-semibold text-yellow-600">Berechne Gewichtsänderungen...</p>`;
                 network.calculateDeltas(example.targets);
                 
                 const visibleLinks = getLinksAndDeltas().filter(visibleLinksFilter);
@@ -330,7 +341,7 @@
                 await new Promise(r => setTimeout(r, 1500));
 
                 // 4. Apply Deltas
-                statusBox.innerHTML = `<p class="font-semibold text-green-600">Applying Changes...</p>`;
+                statusBox.innerHTML = `<p class="font-semibold text-green-600">Änderungen anwenden...</p>`;
                 network.applyDeltas();
                 updateDynamicElements();
                 
@@ -340,40 +351,22 @@
                     .remove();
 
                 await new Promise(r => setTimeout(r, 1000));
+                
+                exampleIndex = (exampleIndex + 1) % examples.length;
             }
 
-            playPauseBtn.addEventListener('click', () => {
-                isPlaying = !isPlaying;
-                if (isPlaying) {
-                    playPauseBtn.textContent = 'Pause';
-                    playPauseBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-                    playPauseBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
-                    animationInterval = setInterval(animationStep, 5000);
-                    animationStep(); // Start immediately
-                } else {
-                    playPauseBtn.textContent = 'Play';
-                    playPauseBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
-                    playPauseBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
-                    clearInterval(animationInterval);
-                    animationInterval = null;
-                }
-            });
-
-            resetBtn.addEventListener('click', () => {
-                if (isPlaying) playPauseBtn.click();
-                network.reset();
-                network.inputs = null;
-                network.hidden = null;
-                network.outputs = null;
-                network.delta_ih = null;
-                network.delta_ho = null;
-                updateDynamicElements(0);
-                statusBox.innerHTML = `<p>Weights have been reset. Press "Play" to begin.</p>`;
-            });
-
             // Initial render
+            const initialExample = examples[0];
+            document.getElementById('input-values').textContent = `[${initialExample.inputs.join(', ')}]`;
+            document.getElementById('target-values').textContent = `[${initialExample.targets.join(', ')}] (${initialExample.label})`;
             drawStaticElements();
             updateDynamicElements(0);
+
+            // Start animation automatically
+            setTimeout(() => {
+                animationStep(); // Run first step immediately
+                setInterval(animationStep, 5000); // Continue every 5 seconds
+            }, 3000);
         });
     </script>
 </body>
