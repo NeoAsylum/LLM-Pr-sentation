@@ -6,157 +6,159 @@
     <title>Neuronales Netz Backpropagation Animation</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
+        :root {
+            --bg-color: #121212;
+            --primary-text-color: #E0E0E0;
+            --secondary-text-color: #B3B3B3;
+            --card-bg-color: #1E1E1E;
+            --border-color: #333333;
+            --accent-color: #BB86FC;
+            --accent-color-darker: #3700B3;
+            --success-color: #03DAC6;
+            --error-color: #CF6679;
+            --font-family: 'Roboto', sans-serif;
         }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--primary-text-color);
+        }
+
+        /* --- VISUALIZATION STYLE ADJUSTMENTS --- */
         .link {
-            stroke-width: 3px;
+            stroke-width: 3.5px; /* Thicker lines */
             stroke-opacity: 1.0;
-            filter: drop-shadow( 0px 0px 1.5px black );
+            filter: drop-shadow( 0px 0px 3px rgba(255,255,255,0.3) );
         }
         .node {
-            stroke: #4b5563;
-            stroke-width: 1px;
+            stroke: var(--accent-color);
+            stroke-width: 2.5px; /* Thicker node borders */
         }
         .node-label, .weight-label {
-            font-size: 12px;
+            font-size: 16px; /* Larger font */
             font-family: monospace;
-            fill: #1f2937;
+            fill: var(--primary-text-color);
             pointer-events: none;
         }
         .delta-label {
-            font-size: 11px;
+            font-size: 15px; /* Larger font */
             font-family: monospace;
             font-weight: bold;
             pointer-events: none;
         }
         .ellipsis-label {
-            font-size: 24px;
+            font-size: 32px; /* Larger ellipsis */
             font-weight: bold;
-            fill: #9ca3af;
+            fill: #555;
             text-anchor: middle;
         }
-        .input-label {
-            font-size: 14px;
+        .input-label, .output-label {
+            font-size: 18px; /* Larger labels */
             font-weight: 500;
-            fill: #374151;
-            text-anchor: end;
+            fill: var(--secondary-text-color);
         }
-        .output-label {
-            font-size: 14px;
-            font-weight: 500;
-            fill: #374151;
-            text-anchor: start;
-        }
-        .status-text {
-             font-size: 16px;
-             font-weight: 500;
-             fill: #1f2937;
-             text-anchor: middle;
+        .input-label { text-anchor: end; }
+        .output-label { text-anchor: start; }
+        
+        .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 0 20px rgba(187, 134, 252, 0.1);
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="antialiased">
 
     <div class="container mx-auto p-4 md:p-8 max-w-7xl">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-900">Training eines Neuronalen Netzwerks</h1>
+        <header class="text-center mb-10">
+            <h1 class="text-5xl md:text-6xl font-bold text-white tracking-tight">Training eines Neuronalen Netzwerks</h1>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <!-- Left Panel: Info -->
-            <div class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg">
-                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Aktuelles Beispiel</h2>
-                 <div class="bg-gray-50 p-3 rounded-lg text-center">
-                    <p class="font-medium text-gray-800">Eingabe: <span id="input-values" class="font-mono"></span></p>
-                    <p class="font-medium text-gray-800">Ziel: <span id="target-values" class="font-mono"></span></p>
-                </div>
+            <div class="lg:col-span-1 bg-[var(--card-bg-color)] p-6 rounded-2xl shadow-lg border border-[var(--border-color)]">
+                <h2 class="text-3xl font-semibold mb-4 border-b border-[var(--border-color)] pb-2 text-white">Aktuelles Beispiel</h2>
+                  <div class="bg-black/20 p-4 rounded-lg space-y-2">
+                      <p class="font-medium text-[var(--secondary-text-color)] text-lg">Eingabe: <span id="input-values" class="font-mono text-[var(--primary-text-color)]"></span></p>
+                      <p class="font-medium text-[var(--secondary-text-color)] text-lg">Ziel: <span id="target-values" class="font-mono text-[var(--primary-text-color)]"></span></p>
+                  </div>
 
-                <h2 class="text-2xl font-semibold my-4 border-b pb-2">Status</h2>
-                <div id="status-box" class="space-y-2 text-gray-700 bg-gray-50 p-3 rounded-lg h-32 flex items-center justify-center">
-                   <p class="text-center">Animation startet in 3 Sekunden...</p>
+                <h2 class="text-3xl font-semibold my-4 border-b border-[var(--border-color)] pb-2 text-white">Status</h2>
+                <div id="status-box" class="space-y-2 text-[var(--secondary-text-color)] bg-black/20 p-3 rounded-lg h-36 flex items-center justify-center">
+                   <p class="text-center text-lg">Animation startet in 3 Sekunden...</p>
                 </div>
             </div>
 
-            <!-- Right Panel: Network Visualization -->
-            <div class="lg:col-span-3 bg-white p-6 rounded-2xl shadow-lg">
-                <div id="network-visualization" class="w-full h-[450px] flex justify-center items-center"></div>
+            <div class="lg:col-span-3 bg-[var(--card-bg-color)] p-6 rounded-2xl shadow-lg border border-[var(--border-color)]">
+                <div id="network-visualization" class="w-full h-[550px] flex justify-center items-center"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- Neural Network Implementation ---
+        // --- Neural Network Implementation (Unchanged) ---
         const sigmoid = x => 1 / (1 + Math.exp(-x));
         const sigmoidDerivative = x => x * (1 - x);
 
         class NeuralNetwork {
              constructor(inputNodes, hiddenNodes, outputNodes) {
-                this.inputNodes = inputNodes;
-                this.hiddenNodes = hiddenNodes;
-                this.outputNodes = outputNodes;
-                this.learningRate = 0.7;
-                this.reset();
-            }
+                 this.inputNodes = inputNodes;
+                 this.hiddenNodes = hiddenNodes;
+                 this.outputNodes = outputNodes;
+                 this.learningRate = 0.7;
+                 this.reset();
+             }
 
-            reset() {
-                this.weights_ih = Array.from({ length: this.hiddenNodes }, () => Array.from({ length: this.inputNodes }, () => Math.random() * 0.5 - 0.25));
-                this.weights_ho = Array.from({ length: this.outputNodes }, () => Array.from({ length: this.hiddenNodes }, () => Math.random() * 0.5 - 0.25));
-                this.bias_h = Array.from({ length: this.hiddenNodes }, () => Math.random() * 0.5 - 0.25);
-                this.bias_o = Array.from({ length: this.outputNodes }, () => Math.random() * 0.5 - 0.25);
-            }
+             reset() {
+                 this.weights_ih = Array.from({ length: this.hiddenNodes }, () => Array.from({ length: this.inputNodes }, () => Math.random() * 0.5 - 0.25));
+                 this.weights_ho = Array.from({ length: this.outputNodes }, () => Array.from({ length: this.hiddenNodes }, () => Math.random() * 0.5 - 0.25));
+                 this.bias_h = Array.from({ length: this.hiddenNodes }, () => Math.random() * 0.5 - 0.25);
+                 this.bias_o = Array.from({ length: this.outputNodes }, () => Math.random() * 0.5 - 0.25);
+             }
 
-            feedforward(inputArray) {
-                this.inputs = inputArray;
-                this.hidden = this.weights_ih.map((weights, i) => {
-                    const sum = weights.reduce((acc, w, j) => acc + w * inputArray[j], 0);
-                    return sigmoid(sum + this.bias_h[i]);
-                });
-                this.outputs = this.weights_ho.map((weights, i) => {
-                    const sum = weights.reduce((acc, w, j) => acc + w * this.hidden[j], 0);
-                    return sigmoid(sum + this.bias_o[i]);
-                });
-                return this.outputs;
-            }
+             feedforward(inputArray) {
+                 this.inputs = inputArray;
+                 this.hidden = this.weights_ih.map((weights, i) => {
+                     const sum = weights.reduce((acc, w, j) => acc + w * inputArray[j], 0);
+                     return sigmoid(sum + this.bias_h[i]);
+                 });
+                 this.outputs = this.weights_ho.map((weights, i) => {
+                     const sum = weights.reduce((acc, w, j) => acc + w * this.hidden[j], 0);
+                     return sigmoid(sum + this.bias_o[i]);
+                 });
+                 return this.outputs;
+             }
 
-            calculateDeltas(targetArray) {
-                const outputErrors = targetArray.map((target, i) => target - this.outputs[i]);
-                
-                // Calculate output layer gradients (delta_k * learning_rate)
-                const outputGradients = this.outputs.map((o, i) => sigmoidDerivative(o) * outputErrors[i] * this.learningRate);
+             calculateDeltas(targetArray) {
+                 const outputErrors = targetArray.map((target, i) => target - this.outputs[i]);
+                 
+                 const outputGradients = this.outputs.map((o, i) => sigmoidDerivative(o) * outputErrors[i] * this.learningRate);
+                 const outputDeltas = this.outputs.map((o, i) => sigmoidDerivative(o) * outputErrors[i]);
 
-                // Calculate output deltas (used for backpropagation)
-                const outputDeltas = this.outputs.map((o, i) => sigmoidDerivative(o) * outputErrors[i]);
+                 const hiddenErrors = this.weights_ho[0].map((_, h) => 
+                     this.weights_ho.reduce((acc, weights, o) => acc + weights[h] * outputDeltas[o], 0)
+                 );
 
-                // Calculate hidden layer errors by backpropagating output deltas
-                const hiddenErrors = this.weights_ho[0].map((_, h) => 
-                    this.weights_ho.reduce((acc, weights, o) => acc + weights[h] * outputDeltas[o], 0)
-                );
+                 const hiddenGradients = this.hidden.map((h, i) => sigmoidDerivative(h) * hiddenErrors[i] * this.learningRate);
 
-                // Calculate hidden layer gradients (delta_h * learning_rate)
-                const hiddenGradients = this.hidden.map((h, i) => sigmoidDerivative(h) * hiddenErrors[i] * this.learningRate);
+                 this.delta_ho = outputGradients.map(og => this.hidden.map(h => og * h));
+                 this.delta_o_bias = [...outputGradients];
+                 
+                 this.delta_ih = hiddenGradients.map(hg => this.inputs.map(i => hg * i));
+                 this.delta_h_bias = [...hiddenGradients];
+             }
 
-                // Calculate weight changes
-                this.delta_ho = outputGradients.map(og => this.hidden.map(h => og * h));
-                this.delta_o_bias = [...outputGradients];
-                
-                this.delta_ih = hiddenGradients.map(hg => this.inputs.map(i => hg * i));
-                this.delta_h_bias = [...hiddenGradients];
-            }
+             applyDeltas() {
+                 this.weights_ho = this.weights_ho.map((weights, o) => 
+                     weights.map((w, h) => w + this.delta_ho[o][h])
+                 );
+                 this.bias_o = this.bias_o.map((b, i) => b + this.delta_o_bias[i]);
 
-            applyDeltas() {
-                this.weights_ho = this.weights_ho.map((weights, o) => 
-                    weights.map((w, h) => w + this.delta_ho[o][h])
-                );
-                this.bias_o = this.bias_o.map((b, i) => b + this.delta_o_bias[i]);
-
-                this.weights_ih = this.weights_ih.map((weights, h) => 
-                    weights.map((w, i) => w + this.delta_ih[h][i])
-                );
-                this.bias_h = this.bias_h.map((b, i) => b + this.delta_h_bias[i]);
-            }
+                 this.weights_ih = this.weights_ih.map((weights, h) => 
+                     weights.map((w, i) => w + this.delta_ih[h][i])
+                 );
+                 this.bias_h = this.bias_h.map((b, i) => b + this.delta_h_bias[i]);
+             }
         }
 
         // --- Visualization Logic ---
@@ -178,7 +180,7 @@
             const height = svgContainer.node().getBoundingClientRect().height;
             const svg = svgContainer.append("svg").attr("width", width).attr("height", height);
 
-            const nodeRadius = 15;
+            const nodeRadius = 22; // Larger nodes
             const inputLabels = ["Stiellänge", "Blütenfarbe", "Blattform"];
             const outputLabels = ["Tulpe", "Rose"];
 
@@ -190,7 +192,7 @@
             const allNodes = [...nodes.input, ...nodes.hidden, ...nodes.output];
             const visibleNodes = allNodes.filter(d => d.layer !== 1 || d.index === 0 || d.index === network.hiddenNodes - 1);
 
-            const layerOffsets = [width * 0.15, width * 0.5, width * 0.9];
+            const layerOffsets = [width * 0.05, width * 0.5, width * 0.95]; // Adjusted spacing
             allNodes.forEach(node => {
                 node.x = layerOffsets[node.layer];
                 const layerKey = Object.keys(nodes)[node.layer];
@@ -199,7 +201,7 @@
                 node.y = (node.index + 1) * ySpacing;
             });
 
-            const weightColor = d3.scaleDiverging(d3.interpolatePiYG).domain([1, 0, -1]);
+            const weightColor = d3.scaleDiverging(d3.interpolateRdYlBu).domain([1, 0, -1]);
 
             const linkGroup = svg.append("g").attr("class", "links");
             const nodeGroup = svg.append("g").attr("class", "nodes");
@@ -238,29 +240,28 @@
 
             function drawStaticElements() {
                  labelGroup.selectAll(".input-label").data(nodes.input).join("text")
-                    .attr("class", "input-label")
-                    .attr("x", d => d.x - nodeRadius - 15).attr("y", d => d.y + 5)
-                    .text(d => d.label);
+                     .attr("class", "input-label")
+                     // Increased spacing from node
+                     .attr("x", d => d.x - nodeRadius - 25).attr("y", d => d.y + 6);
 
-                labelGroup.selectAll(".output-label").data(nodes.output).join("text")
-                    .attr("class", "output-label")
-                    .attr("x", d => d.x + nodeRadius + 15).attr("y", d => d.y + 5)
-                    .text(d => d.label);
-                
-                nodeGroup.selectAll("circle").data(visibleNodes).join("circle")
-                    .attr("class", "node")
-                    .attr("cx", d => d.x).attr("cy", d => d.y)
-                    .attr("r", nodeRadius)
-                    .style("fill", "#f3f4f6");
-                
-                // Add ellipsis
-                const firstHidden = nodes.hidden[0];
-                const lastHidden = nodes.hidden[nodes.hidden.length - 1];
-                labelGroup.append("text")
-                    .attr("class", "ellipsis-label")
-                    .attr("x", firstHidden.x)
-                    .attr("y", (firstHidden.y + lastHidden.y) / 2 + 8)
-                    .text("...");
+                 labelGroup.selectAll(".output-label").data(nodes.output).join("text")
+                     .attr("class", "output-label")
+                      // Increased spacing from node
+                     .attr("x", d => d.x + nodeRadius + 25).attr("y", d => d.y + 6);
+                 
+                 nodeGroup.selectAll("circle").data(visibleNodes).join("circle")
+                     .attr("class", "node")
+                     .attr("cx", d => d.x).attr("cy", d => d.y)
+                     .attr("r", nodeRadius)
+                     .style("fill", "#2a2a2a");
+                 
+                 const firstHidden = nodes.hidden[0];
+                 const lastHidden = nodes.hidden[nodes.hidden.length - 1];
+                 labelGroup.append("text")
+                     .attr("class", "ellipsis-label")
+                     .attr("x", firstHidden.x)
+                     .attr("y", (firstHidden.y + lastHidden.y) / 2 + 10) // Adjusted y-position
+                     .text("...");
             }
 
             function updateDynamicElements(duration = 500) {
@@ -283,13 +284,13 @@
                 )
                 .attr("class", "weight-label")
                 .attr("x", d => (d.source.x + d.target.x) / 2)
-                .attr("y", d => (d.source.y + d.target.y) / 2 - 5)
+                .attr("y", d => (d.source.y + d.target.y) / 2 - 10) // More space from line
                 .attr("text-anchor", "middle")
                 .text(d => d.weight.toFixed(3));
                 
                 labelGroup.selectAll(".node-label").data(visibleNodes).join("text")
                     .attr("class", "node-label")
-                    .attr("x", d => d.x).attr("y", d => d.y + 4)
+                    .attr("x", d => d.x).attr("y", d => d.y + 6) // Better vertical alignment
                     .attr("text-anchor", "middle")
                     .text(d => {
                         if (d.layer === 0 && network.inputs) return network.inputs[d.index].toFixed(2);
@@ -302,46 +303,44 @@
             async function animationStep() {
                 const example = examples[exampleIndex];
                 
-                // Update example display
                 document.getElementById('input-values').textContent = `[${example.inputs.join(', ')}]`;
                 document.getElementById('target-values').textContent = `[${example.targets.join(', ')}] (${example.label})`;
 
-                // 1. Forward Pass
-                statusBox.innerHTML = `<p class="font-semibold text-blue-600">Vorwärtsdurchlauf...</p>`;
+                // Larger status text
+                statusBox.innerHTML = `<p class="text-xl" style="color: #82aaff">1. Vorwärtsdurchlauf...</p>`;
                 network.feedforward(example.inputs);
                 updateDynamicElements();
-                await new Promise(r => setTimeout(r, 1000));
+                await new Promise(r => setTimeout(r, 1500));
 
-                // 2. Calculate Error
                 const outputs = network.outputs;
                 const target = example.targets;
                 const error = [target[0] - outputs[0], target[1] - outputs[1]];
                 statusBox.innerHTML = `
-                    <p class="font-semibold text-red-600">Fehlerberechnung</p>
-                    <p class="font-mono text-sm">(${error[0].toFixed(2)}, ${error[1].toFixed(2)})</p>
+                    <div class="text-center">
+                        <p class="text-xl" style="color: var(--error-color)">2. Fehlerberechnung</p>
+                        <p class="font-mono text-lg">(${error[0].toFixed(3)}, ${error[1].toFixed(3)})</p>
+                    </div>
                 `;
-                await new Promise(r => setTimeout(r, 1000));
+                await new Promise(r => setTimeout(r, 1500));
 
-                // 3. Calculate Deltas
-                statusBox.innerHTML = `<p class="font-semibold text-yellow-600">Berechne Gewichtsänderungen...</p>`;
+                statusBox.innerHTML = `<p class="text-xl" style="color: #ffcb6b">3. Berechne Gewichtsänderungen...</p>`;
                 network.calculateDeltas(example.targets);
                 
                 const visibleLinks = getLinksAndDeltas().filter(visibleLinksFilter);
                 labelGroup.selectAll(".delta-label").data(visibleLinks).join("text")
                     .attr("class", "delta-label")
                     .attr("x", d => (d.source.x + d.target.x) / 2)
-                    .attr("y", d => (d.source.y + d.target.y) / 2 + 15)
+                    .attr("y", d => (d.source.y + d.target.y) / 2 + 22) // More space from line
                     .attr("text-anchor", "middle")
-                    .style("fill", d => d.delta >= 0 ? "#16a34a" : "#dc2626")
+                    .style("fill", d => d.delta >= 0 ? "#c3e88d" : "#ff5370")
                     .text(d => (d.delta >= 0 ? "+" : "") + d.delta.toFixed(3))
                     .style("opacity", 0)
                     .transition().duration(500)
                     .style("opacity", 1);
 
-                await new Promise(r => setTimeout(r, 1500));
+                await new Promise(r => setTimeout(r, 2000));
 
-                // 4. Apply Deltas
-                statusBox.innerHTML = `<p class="font-semibold text-green-600">Änderungen anwenden...</p>`;
+                statusBox.innerHTML = `<p class="text-xl" style="color: var(--success-color)">4. Änderungen anwenden...</p>`;
                 network.applyDeltas();
                 updateDynamicElements();
                 
@@ -350,22 +349,21 @@
                     .style("opacity", 0)
                     .remove();
 
-                await new Promise(r => setTimeout(r, 1000));
+                await new Promise(r => setTimeout(r, 1500));
                 
                 exampleIndex = (exampleIndex + 1) % examples.length;
             }
 
-            // Initial render
             const initialExample = examples[0];
             document.getElementById('input-values').textContent = `[${initialExample.inputs.join(', ')}]`;
             document.getElementById('target-values').textContent = `[${initialExample.targets.join(', ')}] (${initialExample.label})`;
             drawStaticElements();
             updateDynamicElements(0);
 
-            // Start animation automatically
             setTimeout(() => {
-                animationStep(); // Run first step immediately
-                setInterval(animationStep, 5000); // Continue every 5 seconds
+                animationStep();
+                // Increased interval to allow more time to read
+                setInterval(animationStep, 7000);
             }, 3000);
         });
     </script>
