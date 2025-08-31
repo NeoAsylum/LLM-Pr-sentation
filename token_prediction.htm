@@ -66,14 +66,13 @@
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4 overflow-hidden">
     <div id="attention-container" class="absolute top-0 left-0 w-full h-full pointer-events-none z-10"></div>
 
-    <div class="w-full max-w-7xl aspect-video bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col">
+    <div class="w-full max-w-full h-screen bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col">
         <div class="text-center">
             <h1 class="text-3xl md:text-4xl font-bold text-cyan-400 mb-2">Transformer-Architektur in Aktion</h1>
             <div class="text-left text-gray-400 max-w-4xl mx-auto mt-4 text-sm p-4 bg-gray-900/30 rounded-lg">
-                <p class="text-base text-cyan-400 mb-2 font-semibold">Im Self-Attention Mechanismus:</p>
                 <ul class="list-none pl-2 space-y-2">
-                    <li><span class="font-bold text-emerald-400">Key-Vektor:</span> Wird für jeden Input-Token generiert. Er agiert als eine Gegenstück zum Query Vektor.</li>
-                    <li><span class="font-bold text-cyan-300">Query-Vektor:</span> Wird für den aktuellen Token berechnet. Wird mit allen Key-Vektoren verglichen, um die Aufmerksamkeitsgewichte zu bestimmen.</li>
+                    <li class="text-base"><span class="font-bold text-emerald-400">Key-Vektor:</span> Wird für jeden Input-Token generiert. Er agiert als eine Gegenstück zum Query Vektor.</li>
+                    <li class="text-base"><span class="font-bold text-cyan-300">Query-Vektor:</span> Wird für den aktuellen Token berechnet. Wird mit allen Key-Vektoren verglichen, um die Aufmerksamkeitsgewichte zu bestimmen.</li>
                 </ul>
             </div>
         </div>
@@ -96,20 +95,13 @@
         <!-- Container für die Vorhersagen -->
         <div class="min-h-[100px] flex items-center justify-center" id="predictions-container"></div>
 
-        <!-- Steuerung -->
-        <div class="mt-8 text-center">
-            <button id="restart-button" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-8 rounded-lg transition-transform duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-cyan-300">
-                Neustart
-            </button>
         </div>
-    </div>
 
     <script>
         // --- DOM-Elemente ---
         const sentenceContainer = document.getElementById('sentence-container');
         const placeholderContainer = document.getElementById('placeholder-container');
         const predictionsContainer = document.getElementById('predictions-container');
-        const restartButton = document.getElementById('restart-button');
         const attentionContainer = document.getElementById('attention-container');
         const statusText = document.getElementById('status-text');
 
@@ -141,7 +133,6 @@
 
         async function startAnimation() {
             resetAnimation();
-            restartButton.classList.add('opacity-50', 'cursor-not-allowed');
             
             setStatus('1. Tokenisierung des Inputs');
             const prefixTokens = sentencePrefix.split(/\s+/);
@@ -168,7 +159,6 @@
         async function runNextStep() {
             if (currentStep >= animationSteps.length) {
                 setStatus('Satzgenerierung abgeschlossen.');
-                restartButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 return;
             }
 
@@ -302,7 +292,6 @@
             predictionsContainer.innerHTML = '';
             clearAttentionLines();
             setStatus('');
-            restartButton.classList.remove('opacity-50', 'cursor-not-allowed');
         }
 
         function delay(ms) {
@@ -312,8 +301,9 @@
             });
         }
 
-        restartButton.addEventListener('click', startAnimation);
-        window.addEventListener('load', startAnimation);
+        window.addEventListener('load', () => {
+            setTimeout(startAnimation, 3000);
+        });
     </script>
 </body>
 </html>
