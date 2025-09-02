@@ -9,15 +9,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #121212;
-            --primary-text-color: #E0E0E0;
-            --secondary-text-color: #B3B3B3;
-            --card-bg-color: #1E1E1E;
-            --border-color: #333333;
-            --accent-color: #BB86FC;
-            --accent-color-darker: #3700B3;
-            --success-color: #03DAC6;
-            --error-color: #CF6679;
+            --bg-color: #F4F7FA; /* A very light blue-grey */
+            --primary-text-color: #1a202c; /* Almost black */
+            --secondary-text-color: #4a5568; /* Dark grey */
+            --card-bg-color: #FFFFFF; /* White */
+            --border-color: #D3DEE9; /* Light blue-grey */
+            --accent-color: #3B82F6; /* A nice blue */
+            --accent-color-darker: #1D4ED8; /* A darker blue */
+            --success-color: #10B981; /* Green */
+            --error-color: #EF4444; /* Red */
+            --warning-color: #F59E0B; /* Amber */
             --font-family: 'Roboto', sans-serif;
         }
 
@@ -31,7 +32,8 @@
         .link {
             stroke-width: 3.5px; /* Thicker lines */
             stroke-opacity: 1.0;
-            filter: drop-shadow( 0px 0px 3px rgba(255,255,255,0.3) );
+            /* Create a "border" effect with a drop shadow */
+            filter: drop-shadow(0px 0px 1.5px rgba(0, 0, 0, 0.4));
         }
         .node {
             stroke: var(--accent-color);
@@ -52,7 +54,7 @@
         .ellipsis-label {
             font-size: 32px; /* Larger ellipsis */
             font-weight: bold;
-            fill: #555;
+            fill: #999; /* Lighter for light bg */
             text-anchor: middle;
         }
         .input-label, .output-label {
@@ -64,7 +66,8 @@
         .output-label { text-anchor: start; }
         
         .shadow-lg {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 0 20px rgba(187, 134, 252, 0.1);
+            /* Adjusted shadow for light theme with new accent color */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 0 20px rgba(59, 130, 246, 0.1);
         }
     </style>
 </head>
@@ -72,19 +75,19 @@
 
     <div class="container mx-auto p-4 md:p-8 max-w-7xl">
         <header class="text-center mb-10">
-            <h1 class="text-5xl md:text-6xl font-bold text-white tracking-tight">Training eines Neuronalen Netzwerks</h1>
+            <h1 class="text-5xl md:text-6xl font-bold tracking-tight">Training eines Neuronalen Netzwerks</h1>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div class="lg:col-span-1 bg-[var(--card-bg-color)] p-6 rounded-2xl shadow-lg border border-[var(--border-color)]">
-                <h2 class="text-3xl font-semibold mb-4 border-b border-[var(--border-color)] pb-2 text-white">Aktuelles Beispiel</h2>
-                  <div class="bg-black/20 p-4 rounded-lg space-y-2">
+                <h2 class="text-3xl font-semibold mb-4 border-b border-[var(--border-color)] pb-2">Aktuelles Beispiel</h2>
+                  <div class="bg-slate-100 p-4 rounded-lg space-y-2">
                       <p class="font-medium text-[var(--secondary-text-color)] text-lg">Eingabe: <span id="input-values" class="font-mono text-[var(--primary-text-color)]"></span></p>
                       <p class="font-medium text-[var(--secondary-text-color)] text-lg">Ziel: <span id="target-values" class="font-mono text-[var(--primary-text-color)]"></span></p>
                   </div>
 
-                <h2 class="text-3xl font-semibold my-4 border-b border-[var(--border-color)] pb-2 text-white">Status</h2>
-                <div id="status-box" class="space-y-2 text-[var(--secondary-text-color)] bg-black/20 p-3 rounded-lg h-36 flex items-center justify-center">
+                <h2 class="text-3xl font-semibold my-4 border-b border-[var(--border-color)] pb-2">Status</h2>
+                <div id="status-box" class="space-y-2 text-[var(--secondary-text-color)] bg-slate-100 p-3 rounded-lg h-36 flex items-center justify-center">
                    <p class="text-center text-lg">Animation startet in 3 Sekunden...</p>
                 </div>
             </div>
@@ -173,6 +176,15 @@
             ];
             let exampleIndex = 0;
 
+            // Pre-train the network slightly so the initial predictions are more reasonable.
+            const pretrainEpochs = 75;
+            for (let i = 0; i < pretrainEpochs; i++) {
+                const example = examples[i % examples.length];
+                network.feedforward(example.inputs);
+                network.calculateDeltas(example.targets);
+                network.applyDeltas();
+            }
+
             const statusBox = document.getElementById('status-box');
 
             const svgContainer = d3.select("#network-visualization");
@@ -253,7 +265,7 @@
                      .attr("class", "node")
                      .attr("cx", d => d.x).attr("cy", d => d.y)
                      .attr("r", nodeRadius)
-                     .style("fill", "#2a2a2a");
+                     .style("fill", "#EBF8FF");
                  
                  const firstHidden = nodes.hidden[0];
                  const lastHidden = nodes.hidden[nodes.hidden.length - 1];
@@ -307,7 +319,7 @@
                 document.getElementById('target-values').textContent = `[${example.targets.join(', ')}] (${example.label})`;
 
                 // Larger status text
-                statusBox.innerHTML = `<p class="text-xl" style="color: #82aaff">1. Vorwärtsdurchlauf...</p>`;
+                statusBox.innerHTML = `<p class="text-xl" style="color: var(--accent-color)">1. Vorwärtsdurchlauf...</p>`;
                 network.feedforward(example.inputs);
                 updateDynamicElements();
                 await new Promise(r => setTimeout(r, 1500));
@@ -323,7 +335,7 @@
                 `;
                 await new Promise(r => setTimeout(r, 1500));
 
-                statusBox.innerHTML = `<p class="text-xl" style="color: #ffcb6b">3. Berechne Gewichtsänderungen...</p>`;
+                statusBox.innerHTML = `<p class="text-xl" style="color: var(--warning-color)">3. Berechne Gewichtsänderungen...</p>`;
                 network.calculateDeltas(example.targets);
                 
                 const visibleLinks = getLinksAndDeltas().filter(visibleLinksFilter);
@@ -332,7 +344,7 @@
                     .attr("x", d => (d.source.x + d.target.x) / 2)
                     .attr("y", d => (d.source.y + d.target.y) / 2 + 22) // More space from line
                     .attr("text-anchor", "middle")
-                    .style("fill", d => d.delta >= 0 ? "#c3e88d" : "#ff5370")
+                    .style("fill", d => d.delta >= 0 ? "var(--success-color)" : "var(--error-color)")
                     .text(d => (d.delta >= 0 ? "+" : "") + d.delta.toFixed(3))
                     .style("opacity", 0)
                     .transition().duration(500)
