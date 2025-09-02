@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visueller Datenfluss bei einem Neuron</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --node-color: #2c3e50;
+            --line-color: #7f8c8d;
+            --packet-color: #3498db;
+            --highlight-color: #e74c3c;
+            --bg-color: #ecf0f1;
+            --text-color: #34495e;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--node-color);
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-bottom: 30px;
+            color: #555;
+        }
+
+        .visualization {
+            position: relative;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            height: 100%;
+            z-index: 2;
+        }
+        
+        .node {
+            width: 60px;
+            height: 60px;
+            background-color: var(--card-bg);
+            border: 3px solid var(--node-color);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-weight: 500;
+            font-size: 0.9em;
+            transition: transform 0.2s ease, border-color 0.3s ease;
+        }
+
+        .node.neuron {
+            width: 120px;
+            height: 120px;
+            flex-direction: row;
+            gap: 10px;
+        }
+
+        .node.output-node {
+             border-color: var(--packet-color);
+        }
+
+        .node-label {
+            font-size: 0.7em;
+            color: #666;
+            margin-top: 8px;
+            position: absolute;
+            bottom: -25px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .neuron .sum-symbol, .neuron .activation-symbol {
+            font-size: 1.8em;
+            font-weight: bold;
+            padding: 5px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease, background-color 0.3s ease;
+        }
+
+        #lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .data-packet {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: var(--packet-color);
+            border-radius: 50%;
+            z-index: 3;
+            opacity: 0;
+            box-shadow: 0 0 10px var(--packet-color);
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 25px;
+            font-size: 1em;
+            font-weight: 500;
+            background-color: var(--packet-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .weight-label {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 500;
+            z-index: 2;
+        }
+        
+        .calculation-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--node-color);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 4;
+            background: rgba(255,255,255,0.9);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        /* Animations */
+        .highlight {
+             border-color: var(--highlight-color) !important;
+             transform: scale(1.1);
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Visueller Datenfluss bei einem Neuron</h1>
+
+    <div class="visualization" id="viz">
+        <!-- Spalte 1: Inputs -->
+        <div class="column">
+            <div class="node" id="input-0">x1=2.5</div>
+            <div class="node" id="input-1">x2=0.2</div>
+        </div>
+
+        <!-- Spalte 2: Neuron -->
+        <div class="column">
+            <div class="node neuron" id="neuron">
+                <div class="sum-symbol" id="sum-part">Σ</div>
+                <div class="activation-symbol" id="activation-part">ƒ</div>
+            </div>
+             <div class="calculation-display" id="calc-display"></div>
+        </div>
+
+        <!-- Spalte 3: Output -->
+        <div class="column">
+            <div class="node output-node" id="output">?</div>
+        </div>
+        
+        <!-- SVG für die Linien -->
+        <svg id="lines" width="100%" height="100%">
+            <!-- Linien und Gewichte werden von JS erstellt -->
+        </svg>
+
+    </div>
+
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const viz = document.getElementById('viz');
+        const calcDisplay = document.getElementById('calc-display');
+        const svgLines = document.getElementById('lines');
+
+        const inputs = [
+            { el: document.getElementById('input-0'), value: 2.5, weight: 0.5 },
+            { el: document.getElementById('input-1'), value: 0.2, weight: -1.0 }
+        ];
+        const neuronEl = document.getElementById('neuron');
+        const sumPartEl = document.getElementById('sum-part');
+        const activationPartEl = document.getElementById('activation-part');
+        const outputEl = document.getElementById('output');
+
+        const Animation_Duration = 4000; // ms
+
+        // Funktion zum Pausieren
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // Linien und Gewichte zeichnen
+        function drawLines() {
+            svgLines.innerHTML = ''; // Clear existing lines
+            // Alte Gewichts-Labels entfernen, um Duplikate bei Größenänderung zu vermeiden
+            viz.querySelectorAll('.weight-label').forEach(label => label.remove());
+
+            const neuronRect = neuronEl.getBoundingClientRect();
+            const vizRect = viz.getBoundingClientRect();
+
+            const neuronCenterX = neuronRect.left + neuronRect.width / 2 - vizRect.left;
+            const neuronCenterY = neuronRect.top + neuronRect.height / 2 - vizRect.top;
+
+            inputs.forEach((input, i) => {
+                const inputRect = input.el.getBoundingClientRect();
+                const inputCenterX = inputRect.right - vizRect.left;
+                const inputCenterY = inputRect.top + inputRect.height / 2 - vizRect.top;
+
+                // Linie von Input zum Neuron
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', inputCenterX);
+                line.setAttribute('y1', inputCenterY);
+                line.setAttribute('x2', neuronCenterX - neuronRect.width / 2);
+                line.setAttribute('y2', neuronCenterY);
+                line.setAttribute('stroke', 'var(--line-color)');
+                line.setAttribute('stroke-width', '3');
+                svgLines.appendChild(line);
+
+                // Gewicht-Label an der Linie
+                const weightLabel = document.createElement('div');
+                weightLabel.className = 'weight-label';
+                weightLabel.innerText = `w${i+1}=${input.weight.toFixed(1)}`;
+                weightLabel.style.left = `${(inputCenterX + neuronCenterX - neuronRect.width / 2) / 2 - 20}px`;
+                weightLabel.style.top = `${(inputCenterY + neuronCenterY) / 2 - 25}px`;
+                viz.appendChild(weightLabel);
+            });
+
+            // Linie vom Neuron zum Output
+            const outputRect = outputEl.getBoundingClientRect();
+            const outputCenterX = outputRect.left - vizRect.left;
+            const outputCenterY = outputRect.top + outputRect.height / 2 - vizRect.top;
+            const lineOut = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            lineOut.setAttribute('x1', neuronCenterX + neuronRect.width / 2);
+            lineOut.setAttribute('y1', neuronCenterY);
+            lineOut.setAttribute('x2', outputCenterX);
+            lineOut.setAttribute('y2', outputCenterY);
+            lineOut.setAttribute('stroke', 'var(--line-color)');
+            lineOut.setAttribute('stroke-width', '3');
+            svgLines.appendChild(lineOut);
+        }
+        
+        // Element hervorheben
+        function highlight(el) {
+            el.classList.add('highlight');
+            setTimeout(() => el.classList.remove('highlight'), 500);
+        }
+
+        // Animation starten
+        async function startAnimation() {
+            calcDisplay.style.opacity = '0';
+            outputEl.innerText = '?';
+            sumPartEl.style.borderColor = 'transparent';
+            activationPartEl.style.borderColor = 'transparent';
+            
+            let sum = 0;
+
+            // 1. Daten von Inputs zum Neuron senden
+            for (let i = 0; i < inputs.length; i++) {
+                const input = inputs[i];
+                highlight(input.el);
+                
+                const packet = document.createElement('div');
+                packet.className = 'data-packet';
+                viz.appendChild(packet);
+                
+                const startRect = input.el.getBoundingClientRect();
+                const endRect = neuronEl.getBoundingClientRect();
+                const vizRect = viz.getBoundingClientRect();
+
+                // Start- und Endpositionen des Pakets
+                const startX = startRect.right - vizRect.left - 8;
+                const startY = startRect.top + startRect.height / 2 - vizRect.top - 8;
+                const endX = endRect.left - vizRect.left - 8;
+                const endY = endRect.top + endRect.height / 2 - vizRect.top - 8;
+                
+                // Position via top/left anstatt transform setzen
+                packet.style.left = `${startX}px`;
+                packet.style.top = `${startY}px`;
+                packet.style.opacity = '1';
+                
+                // Animation via top/left
+                packet.animate([
+                    { left: `${startX}px`, top: `${startY}px` },
+                    { left: `${endX}px`, top: `${endY}px` }
+                ], {
+                    duration: Animation_Duration,
+                    easing: 'ease-in-out',
+                    fill: 'forwards' // Verhindert den Sprung am Ende
+                });
+
+                await sleep(Animation_Duration / 2);
+                
+                // Multiplikation anzeigen
+                const product = input.value * input.weight;
+                calcDisplay.innerText = `${input.value} × ${input.weight} = ${product.toFixed(2)}`;
+                calcDisplay.style.opacity = '1';
+                
+                // Warten, bis das Paket ankommt
+                await sleep(Animation_Duration / 2);
+                
+                // Zusätzliche Pause, um die Rechnung länger sichtbar zu halten
+                await sleep(2000);
+                
+                calcDisplay.style.opacity = '0';
+                packet.remove();
+                
+                // Summe aktualisieren und Neuron hervorheben
+                sum += product;
+                sumPartEl.style.borderColor = 'var(--highlight-color)';
+                await sleep(100);
+                sumPartEl.style.borderColor = 'transparent';
+                
+                calcDisplay.innerText = `Summe = ${sum.toFixed(2)}`;
+                calcDisplay.style.opacity = '1';
+
+                await sleep(500);
+            }
+
+            // 2. Aktivierungsfunktion anwenden
+            await sleep(500);
+            calcDisplay.style.opacity = '0';
+            highlight(activationPartEl);
+            activationPartEl.style.borderColor = 'var(--highlight-color)';
+            
+            // Aktivierungsfunktion: tanh (Tangens Hyperbolicus)
+            const output = Math.tanh(sum);
+            
+            calcDisplay.innerText = `f(x=${sum.toFixed(2)}) = ${output.toFixed(2)}`;
+            calcDisplay.style.opacity = '1';
+            
+            await sleep(Animation_Duration);
+            activationPartEl.style.borderColor = 'transparent';
+            calcDisplay.style.opacity = '0';
+
+            // 3. Ergebnis zum Output senden
+            const packetOut = document.createElement('div');
+            packetOut.className = 'data-packet';
+            viz.appendChild(packetOut);
+
+            const startRect = neuronEl.getBoundingClientRect();
+            const endRect = outputEl.getBoundingClientRect();
+            const vizRect = viz.getBoundingClientRect();
+
+            const startX = startRect.right - vizRect.left - 8;
+            const startY = startRect.top + startRect.height / 2 - vizRect.top - 8;
+            const endX = endRect.left - vizRect.left - 8;
+            const endY = endRect.top + endRect.height / 2 - vizRect.top - 8;
+            
+            // Position via top/left anstatt transform setzen
+            packetOut.style.left = `${startX}px`;
+            packetOut.style.top = `${startY}px`;
+            packetOut.style.opacity = '1';
+
+            // Animation via top/left
+            packetOut.animate([
+                { left: `${startX}px`, top: `${startY}px` },
+                { left: `${endX}px`, top: `${endY}px` }
+            ], {
+                duration: Animation_Duration,
+                easing: 'ease-in-out',
+                fill: 'forwards' // Verhindert den Sprung am Ende
+            });
+
+            await sleep(Animation_Duration);
+            packetOut.remove();
+            highlight(outputEl);
+            outputEl.innerText = output.toFixed(2);
+        }
+        
+        // Initialisierung
+        drawLines();
+        // Event Listener für die Fenstergröße, um die Linien neu zu zeichnen
+        window.addEventListener('resize', drawLines);
+        setTimeout(startAnimation, 3000);
+    });
+</script>
+
+</body>
+</html>
+
