@@ -3,99 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tokenization Animation</title>
+    <title>Tokenization Visualisiert</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #F4F7FA;
+            --card-bg-color: #FFFFFF;
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --accent-blue: #3B82F6;
+            --accent-green: #10B981;
+        }
         body {
             font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
             overflow: hidden;
-        }
-        .presentation-container {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #000;
-        }
-        .presentation-content {
-            width: 95vw;
-            aspect-ratio: 16 / 9;
-            max-height: 95vh;
-            background: #111827; /* bg-gray-900 */
-            border-radius: 0.5rem;
-            overflow: auto;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 2rem;
-            box-shadow: 0 0 100px rgba(0, 255, 255, 0.1);
-            border: 1px solid #374151;
         }
         .token-card {
             transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-            transform: scale(0.8);
             opacity: 0;
+            transform: translateY(20px) scale(0.95);
         }
         .token-card.visible {
-            transform: scale(1);
             opacity: 1;
+            transform: translateY(0) scale(1);
         }
         .highlight-input {
-            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.4);
-            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+            border-color: var(--accent-blue);
+        }
+        @keyframes arrow-bounce {
+            0%, 100% {
+                transform: translateY(-25%);
+                animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+            }
+            50% {
+                transform: translateY(0);
+                animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+            }
+        }
+        .arrow-bounce {
+            animation: arrow-bounce 1s infinite;
         }
     </style>
 </head>
-<body class="bg-black">
-    <div class="presentation-container">
-        <div class="presentation-content">
-            <div class="w-full max-w-5xl">
-        <div class="text-center mb-8">
-            <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400">Tokenization Visualisiert</h1>
-            <p class="text-gray-400 mt-2 text-lg">Wie Sprachmodelle Text verstehen</p>
-        </div>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-7xl h-[95vh] bg-white rounded-2xl shadow-xl p-6 md:p-8 flex flex-col border border-gray-200">
+        <header class="text-center mb-6 flex-shrink-0">
+            <h1 class="text-4xl md:text-5xl font-bold text-blue-600">Tokenization Visualisiert</h1>
+            <p class="text-gray-500 mt-2 text-xl">Wie Sprachmodelle Text sehen</p>
+        </header>
 
         <!-- Input Section -->
-        <div class="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 shadow-2xl">
-            <label for="text-input" class="block text-sm font-medium text-gray-300 mb-2">Geben Sie einen Satz ein:</label>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-6 shadow-sm">
+            <label for="text-input" class="block text-lg font-medium text-gray-600 mb-3">Geben Sie einen Satz ein:</label>
             <div class="flex flex-col sm:flex-row gap-4">
-                <input type="text" id="text-input" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" placeholder="Der schnelle Fuchs springt..." value="Ich würde gerne Geld abheben. Ich ">
-                <button id="tokenize-btn" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-lg transition-transform duration-200 ease-in-out transform hover:scale-105 shadow-lg">
+                <input type="text" id="text-input" class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Der schnelle Fuchs springt..." value="Ich würde gerne Geld abheben. Ich">
+                <button id="tokenize-btn" class="bg-blue-500 hover:bg-blue-600 text-white text-lg font-bold py-3 px-8 rounded-lg transition-transform duration-200 ease-in-out transform hover:scale-105 shadow-lg">
                     Tokenisieren
                 </button>
             </div>
         </div>
 
         <!-- Animation Display -->
-        <div class="mt-8 relative">
+        <main class="flex-1 flex flex-col gap-6 justify-center overflow-y-auto">
             <!-- Tokens Display -->
-            <div class="mb-6">
-                <h2 class="text-xl font-semibold text-gray-300 mb-3">1. In Tokens aufgeteilt</h2>
-                <div id="tokens-container" class="bg-gray-800/50 border border-gray-700 rounded-xl p-4 min-h-[80px] flex flex-wrap gap-3 items-center">
+            <div class="bg-slate-50 rounded-lg p-6 flex-1 border border-slate-200">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">1. In Tokens aufgeteilt</h2>
+                <div id="tokens-container" class="min-h-[80px] flex flex-wrap gap-4 items-center">
                     <!-- Tokens will be injected here -->
                 </div>
             </div>
             
             <!-- Arrow Down -->
-            <div class="flex justify-center my-4">
-                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-500 animate-bounce" style="animation-delay: 150ms;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div id="arrow-container" class="flex justify-center my-2 flex-shrink-0 opacity-0 transition-opacity duration-500">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400 arrow-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
             </div>
 
             <!-- IDs Display -->
-            <div>
-                <h2 class="text-xl font-semibold text-gray-300 mb-3">2. In numerische IDs umgewandelt</h2>
-                <div id="ids-container" class="bg-gray-800/50 border border-gray-700 rounded-xl p-4 min-h-[80px] flex flex-wrap gap-3 items-center">
+            <div class="bg-slate-50 rounded-lg p-6 flex-1 border border-slate-200">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">2. In numerische IDs umgewandelt</h2>
+                <div id="ids-container" class="min-h-[80px] flex flex-wrap gap-4 items-center">
                     <!-- IDs will be injected here -->
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <script>
@@ -104,16 +103,16 @@
         const tokenizeBtn = document.getElementById('tokenize-btn');
         const tokensContainer = document.getElementById('tokens-container');
         const idsContainer = document.getElementById('ids-container');
+        const arrowContainer = document.getElementById('arrow-container');
 
         // A simplified, static vocabulary for demonstration purposes.
         const vocabulary = {
-            "Künstliche": 23478, "Intelligenz": 456, "transformiert": 9012, "unsere": 333,
-            "Welt": 891, ".": 15, "Der": 5001, "schnelle": 77, "Fuchs": 8080, "springt": 1234,
-            "über": 55, "den": 19, "faulen": 678, "Hund": 9999, "KI": 250, "ist": 251,
-            "faszinierend": 1111, "wie": 42, "funktioniert": 8765, "Token": 255, "ization": 256,
-            "Ich": 731, "würde": 5289, "gerne": 314, "Geld": 8888,
-            // "abheben" is now split into subwords
-            "ab": 4000, "heben": 96,
+            "Ich": 731,
+            "würde": 5289,
+            "gerne": 314,
+            "Geld": 8888,
+            "abheben": 12345,
+            ".": 15,
             "<UNK>": 999 // Special token for unknown words
         };
         
@@ -134,43 +133,15 @@
 
             tokensContainer.innerHTML = '';
             idsContainer.innerHTML = '';
+            arrowContainer.classList.remove('opacity-100');
             
-            const parts = text.split(/(\s+|[.,!?;])/g).filter(part => part);
-
-            const originalWords = [];
-            let currentWord = '';
-
-            parts.forEach(part => {
-                if (/\s+/.test(part) || /[.,!?;]/.test(part)) {
-                    if (currentWord) {
-                        originalWords.push(currentWord);
-                        currentWord = '';
-                    }
-                    originalWords.push(part);
-                } else {
-                    currentWord += part;
-                }
-            });
-            if (currentWord) {
-                originalWords.push(currentWord);
-            }
+            // Use a regex that supports Unicode letters to handle 'ü'
+            const tokens = text.match(/[\p{L}\p{N}]+|[.,!?;]/gu) || [];
             
-            const displayTokens = originalWords.filter(t => t.trim() !== '');
-
-            // Create final tokens with subword splitting
-            const finalTokens = [];
-            displayTokens.forEach((word) => {
-                if (word === 'abheben') {
-                    finalTokens.push('ab', 'heben');
-                } else {
-                    finalTokens.push(word);
-                }
-            });
-            
-            animateWords(finalTokens, 0);
+            animateItems(tokens, 0);
         }
 
-        function animateWords(tokens, index) {
+        function animateItems(tokens, index) {
             if (index >= tokens.length) {
                 textInput.classList.remove('highlight-input');
                 tokenizeBtn.disabled = false;
@@ -178,36 +149,42 @@
                 return;
             }
 
+            if (index > 0) {
+                arrowContainer.classList.add('opacity-100');
+            }
+
             const currentToken = tokens[index];
-            
+
             setTimeout(() => {
+                // Animate token
                 const tokenCard = document.createElement('div');
-                tokenCard.className = 'token-card bg-emerald-500/20 border border-emerald-500 text-emerald-300 rounded-lg px-3 py-2 text-center';
+                const tokenStyle = 'bg-green-100 border-green-400 text-green-800';
+                tokenCard.className = `token-card ${tokenStyle} rounded-lg px-4 py-2 text-center text-xl font-medium shadow-md`;
                 tokenCard.textContent = currentToken;
                 tokensContainer.appendChild(tokenCard);
-                
                 setTimeout(() => tokenCard.classList.add('visible'), 50);
 
+                // Animate ID
                 setTimeout(() => {
                     let tokenId = vocabulary[currentToken] || vocabulary['<UNK>'];
-
                     const idCard = document.createElement('div');
-                    idCard.className = 'token-card bg-sky-500/20 border border-sky-500 text-sky-300 rounded-lg px-3 py-2 text-center font-mono';
+                    const idStyle = 'bg-blue-100 border-blue-400 text-blue-800';
+                    idCard.className = `token-card ${idStyle} rounded-lg px-4 py-2 text-center text-xl font-mono font-semibold shadow-md`;
                     idCard.textContent = tokenId;
                     idsContainer.appendChild(idCard);
-                    
                     setTimeout(() => idCard.classList.add('visible'), 50);
 
-                    setTimeout(() => {
-                        animateWords(tokens, index + 1);
-                    }, 500);
+                    // Next item
+                    animateItems(tokens, index + 1);
+                }, 350);
 
-                }, 300);
-
-            }, 400);
+            }, 300);
         }
 
-        window.onload = startAnimation;
+        // Run on load
+        window.onload = () => {
+            setTimeout(startAnimation, 500);
+        };
     </script>
 </body>
 </html>

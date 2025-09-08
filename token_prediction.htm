@@ -9,8 +9,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #F4F7FA;
+            --card-bg-color: #FFFFFF;
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --accent-blue: #3B82F6;
+            --accent-blue-dark: #1D4ED8;
+        }
         body {
             font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
         }
         .token {
             transition: all 0.5s ease-in-out;
@@ -18,15 +28,15 @@
             position: relative;
         }
         .token-embedding {
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
         }
         .positional-encoded {
-            background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.08) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.08) 75%, transparent 75%, transparent);
-            background-size: 20px 20px;
+            background-image: linear-gradient(45deg, rgba(0, 0, 0, 0.04) 25%, transparent 25%, transparent 50%, rgba(0, 0, 0, 0.04) 50%, rgba(0, 0, 0, 0.04) 75%, transparent 75%, transparent);
+            background-size: 15px 15px;
         }
         .attention-line {
             position: absolute;
-            background: linear-gradient(to top, rgba(0, 255, 255, 0.7), rgba(167, 243, 208, 0.7));
+            background: linear-gradient(to top, rgba(59, 130, 246, 0.7), rgba(29, 78, 216, 0.7));
             height: 2px;
             transform-origin: left center;
             transition: all 0.5s ease-out;
@@ -37,71 +47,45 @@
             animation: pulse 1.5s infinite ease-in-out;
         }
         @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.4); transform: scale(1); }
-            50% { box-shadow: 0 0 35px rgba(0, 255, 255, 0.8); transform: scale(1.05); }
+            0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); transform: scale(1); }
+            50% { box-shadow: 0 0 35px rgba(59, 130, 246, 0.7); transform: scale(1.05); }
         }
         .prediction-vector-wrapper, .prediction-segment {
             transition: opacity 0.4s ease, transform 0.4s ease;
         }
-        .vector-label {
-            position: absolute;
-            bottom: -22px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #4a5568;
-            color: #a0aec0;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            white-space: nowrap;
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
-        }
-        .vector-label.visible {
-            opacity: 1;
-        }
-    </style>
+    </style> m
 </head>
-<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4 overflow-hidden">
+<body class="flex items-center justify-center min-h-screen p-4 overflow-hidden">
     <div id="attention-container" class="absolute top-0 left-0 w-full h-full pointer-events-none z-10"></div>
 
-    <div class="w-full max-w-full h-screen bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col">
-        <div class="text-center">
-            <h1 class="text-3xl md:text-4xl font-bold text-cyan-400 mb-2">Transformer-Architektur in Aktion</h1>
-            <div class="text-left text-gray-400 max-w-4xl mx-auto mt-4 text-sm p-4 bg-gray-900/30 rounded-lg">
-                <ul class="list-none pl-2 space-y-2">
-                    <li class="text-base"><span class="font-bold text-emerald-400">Key-Vektor:</span> Wird für jeden Input-Token generiert. Er agiert als eine Gegenstück zum Query Vektor.</li>
-                    <li class="text-base"><span class="font-bold text-cyan-300">Query-Vektor:</span> Wird für den aktuellen Token berechnet. Wird mit allen Key-Vektoren verglichen, um die Aufmerksamkeitsgewichte zu bestimmen.</li>
-                </ul>
-            </div>
-        </div>
+    <div class="w-full max-w-7xl h-[95vh] bg-white rounded-2xl shadow-xl p-6 md:p-8 flex flex-col border border-gray-200">
+        <header class="text-center mb-4 flex-shrink-0">
+            <h1 class="text-3xl md:text-4xl font-bold text-blue-600">Sprachmodell in Aktion</h1>
+        </header>
 
         <!-- Statusanzeige -->
-        <div id="status-display" class="text-center bg-gray-900/50 rounded-lg py-2 px-4 mb-6 min-h-[40px] flex items-center justify-center">
-            <p id="status-text" class="text-lg text-emerald-300 font-medium transition-opacity duration-300"></p>
+        <div id="status-display" class="text-center bg-slate-100 rounded-lg py-3 px-4 my-4 min-h-[48px] flex items-center justify-center border border-slate-200 flex-shrink-0">
+            <p id="status-text" class="text-lg text-blue-800 font-medium transition-opacity duration-300"></p>
         </div>
 
-        <!-- Container für Tokens -->
-        <div id="sentence-container" class="bg-gray-900/50 rounded-lg p-6 mb-2 flex-grow flex items-center justify-center flex-wrap gap-4">
-            <!-- Tokens werden hier dynamisch eingefügt -->
-        </div>
-        
-        <!-- Container für den nächsten Token Placeholder -->
-        <div id="placeholder-container" class="min-h-[100px] flex items-center justify-center">
-            <!-- Placeholder '?' wird hier angezeigt -->
-        </div>
-
-        <!-- Container für die Vorhersagen -->
-        <div class="min-h-[100px] flex items-center justify-center" id="predictions-container"></div>
-
-        </div>
+        <!-- Hauptbereich -->
+        <main class="flex-1 flex flex-col gap-6 justify-center">
+            <!-- Container für Tokens -->
+            <div id="sentence-container" class="bg-slate-50 rounded-lg p-6 flex-1 flex items-center justify-center flex-wrap gap-4 border border-slate-200 min-h-[12rem]">
+                <!-- Tokens werden hier dynamisch eingefügt -->
+            </div>
+            
+            <!-- Animierter Bereich -->
+            <div id="animation-stage" class="h-36 flex-shrink-0 flex items-center justify-center">
+                <!-- Placeholder & Predictions appear here -->
+            </div>
+        </main>
+    </div>
 
     <script>
         // --- DOM-Elemente ---
         const sentenceContainer = document.getElementById('sentence-container');
-        const placeholderContainer = document.getElementById('placeholder-container');
-        const predictionsContainer = document.getElementById('predictions-container');
+        const animationStage = document.getElementById('animation-stage');
         const attentionContainer = document.getElementById('attention-container');
         const statusText = document.getElementById('status-text');
 
@@ -128,7 +112,7 @@
             setTimeout(() => {
                 statusText.textContent = text;
                 statusText.style.opacity = '1';
-            }, 200);
+            }, 300);
         }
 
         async function startAnimation() {
@@ -139,13 +123,13 @@
             for (const tokenText of prefixTokens) {
                 if (tokenText) createToken(tokenText, false, sentenceContainer);
             }
-            await delay(3000);
+            await delay(2500);
 
             setStatus('2. Word Embedding: Bedeutung wird kodiert');
             document.querySelectorAll('.token').forEach((el, index) => {
-                setTimeout(() => el.classList.add('token-embedding', 'bg-emerald-500/50'), index * 50);
+                setTimeout(() => el.classList.add('token-embedding', 'bg-blue-500/10'), index * 50);
             });
-            await delay(3000);
+            await delay(2500);
 
             setStatus('3. Positional Encoding: Position wird hinzugefügt');
             document.querySelectorAll('.token').forEach((el, index) => {
@@ -162,57 +146,47 @@
                 return;
             }
 
-            setStatus('4. Self-Attention: Query vergleicht sich mit Keys');
-            const nextTokenPlaceholder = createToken('?', true, placeholderContainer, 'Query-Vektor');
+            setStatus('4. Self-Attention: Gewichtung der Tokens');
+            const nextTokenPlaceholder = createToken('?', true, animationStage);
             await delay(500);
             drawAttentionLines(nextTokenPlaceholder, animationSteps[currentStep].attention);
             await delay(3000);
 
-            setStatus('5. Verarbeitung & Vorhersage');
+            setStatus('5. Verarbeitung & Vorhersage des nächsten Tokens');
             nextTokenPlaceholder.classList.add('processing-animation');
             clearAttentionLines();
-            document.querySelectorAll('.vector-label').forEach(l => l.classList.remove('visible'));
             await delay(2000);
 
-            nextTokenPlaceholder.parentElement.remove();
+            animationStage.innerHTML = ''; // Clear placeholder
             displayPredictions(animationSteps[currentStep].predictions);
             await delay(2800);
 
-            setStatus('6. Auswahl & Einfügen');
+            setStatus('6. Auswahl des wahrscheinlichsten Tokens & Einfügen');
             const bestPrediction = animationSteps[currentStep].predictions[0];
-            predictionsContainer.innerHTML = '';
+            animationStage.innerHTML = ''; // Clear predictions
             
             const newToken = createToken(bestPrediction.word, false, sentenceContainer);
             newToken.classList.add('scale-125', 'opacity-50');
             await delay(100);
             
-            newToken.classList.add('token-embedding', 'positional-encoded', 'bg-emerald-500/50');
+            newToken.classList.add('token-embedding', 'positional-encoded', 'bg-blue-500/10');
             newToken.classList.remove('scale-125', 'opacity-50');
 
             currentStep++;
-            await delay(1000);
+            await delay(1500);
             runNextStep();
         }
         
-        function createToken(text, isPlaceholder, container, labelText = '') {
+        function createToken(text, isPlaceholder, container) {
             const wrapper = document.createElement('div');
             wrapper.className = 'relative';
 
             const tokenEl = document.createElement('div');
             tokenEl.textContent = text;
             tokenEl.dataset.token = text;
-            tokenEl.className = `token p-2 md:p-3 rounded-md text-lg md:text-xl font-semibold transition-all duration-500 ${isPlaceholder ? 'bg-cyan-500/50 border-2 border-cyan-400' : 'bg-gray-700'}`;
+            tokenEl.className = `token p-2 md:p-3 rounded-lg text-lg md:text-xl font-semibold transition-all duration-500 ${isPlaceholder ? 'bg-blue-200 border-2 border-blue-500 text-blue-800' : 'bg-slate-200 text-slate-800'}`;
             
             wrapper.appendChild(tokenEl);
-
-            if (labelText) {
-                const labelEl = document.createElement('div');
-                labelEl.textContent = labelText;
-                labelEl.className = 'vector-label';
-                wrapper.appendChild(labelEl);
-                setTimeout(() => labelEl.classList.add('visible'), 100);
-            }
-            
             container.appendChild(wrapper);
             return tokenEl;
         }
@@ -227,10 +201,6 @@
             attentionWeights.forEach(aw => {
                 const sourceEl = [...sourceTokens].reverse().find(el => el.dataset.token === aw.token);
                 if (!sourceEl) return;
-
-                // Show Key/Value Label
-                const label = createTokenLabel(sourceEl, 'Key/Value');
-                setTimeout(() => label.remove(), 2500);
 
                 const sourceRect = sourceEl.getBoundingClientRect();
                 const sourceX = sourceRect.left + sourceRect.width / 2;
@@ -251,29 +221,20 @@
             });
         }
         
-        function createTokenLabel(tokenEl, text) {
-             const labelEl = document.createElement('div');
-             labelEl.textContent = text;
-             labelEl.className = 'vector-label';
-             tokenEl.parentElement.appendChild(labelEl);
-             setTimeout(() => labelEl.classList.add('visible'), 50);
-             return labelEl;
-        }
-
         function displayPredictions(predictions) {
             const vectorWrapper = document.createElement('div');
-            vectorWrapper.className = 'prediction-vector-wrapper flex w-full h-20 bg-gray-700/50 rounded-lg overflow-hidden border-2 border-transparent divide-x divide-gray-600';
-            predictionsContainer.appendChild(vectorWrapper);
+            vectorWrapper.className = 'prediction-vector-wrapper flex w-4/5 max-w-2xl h-28 bg-slate-50 rounded-lg overflow-hidden border-2 border-transparent divide-x divide-slate-200 shadow-lg';
+            animationStage.appendChild(vectorWrapper);
 
             predictions.forEach((pred, index) => {
                 const segment = document.createElement('div');
-                segment.className = `prediction-segment h-full flex flex-1 flex-col items-center justify-center text-center p-2 relative overflow-hidden ${index === 0 ? 'bg-cyan-500/30' : ''}`;
+                segment.className = `prediction-segment h-full flex flex-1 flex-col items-center justify-center text-center p-2 relative overflow-hidden ${index === 0 ? 'bg-blue-100' : ''}`;
                 segment.style.opacity = '0';
-                segment.innerHTML = `<span class="font-semibold text-lg whitespace-nowrap ${index === 0 ? 'text-cyan-300' : 'text-white'}">"${pred.word}"</span><span class="text-sm whitespace-nowrap ${index === 0 ? 'text-cyan-400' : 'text-gray-400'}">Score: ${(pred.prob * 100).toFixed(0)}%</span>`;
+                segment.innerHTML = `<span class="font-semibold text-lg whitespace-nowrap ${index === 0 ? 'text-blue-800' : 'text-slate-800'}">"${pred.word}"</span><span class="text-sm whitespace-nowrap ${index === 0 ? 'text-blue-600' : 'text-slate-500'}">Score: ${(pred.prob * 100).toFixed(0)}%</span>`;
                 vectorWrapper.appendChild(segment);
                 setTimeout(() => {
                     segment.style.opacity = '1';
-                    if (index === 0) vectorWrapper.classList.add('border-cyan-400');
+                    if (index === 0) vectorWrapper.classList.add('border-blue-500');
                 }, 150 * (index + 1));
             });
             setTimeout(() => vectorWrapper.classList.add('visible'), 50);
@@ -288,8 +249,7 @@
             timeouts = [];
             currentStep = 0;
             sentenceContainer.innerHTML = '';
-            placeholderContainer.innerHTML = '';
-            predictionsContainer.innerHTML = '';
+            animationStage.innerHTML = '';
             clearAttentionLines();
             setStatus('');
         }
@@ -302,7 +262,7 @@
         }
 
         window.addEventListener('load', () => {
-            setTimeout(startAnimation, 3000);
+            setTimeout(startAnimation, 1500);
         });
     </script>
 </body>
